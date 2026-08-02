@@ -21,6 +21,7 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
   final _mobileController = TextEditingController();
   final _currencyController = TextEditingController(text: 'USD');
   final _tokenController = TextEditingController();
+  final _companyIdController = TextEditingController(text: 'spice');
 
   bool _isLoading = false;
   bool _isActive = true;
@@ -40,6 +41,7 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
       _mobileController.text = r['mobile'] ?? '';
       _currencyController.text = r['currency'] ?? 'USD';
       _tokenController.text = r['token'] ?? '';
+      _companyIdController.text = r['company_id'] ?? 'spice';
       _isActive = r['is_active'] ?? true;
     }
   }
@@ -79,6 +81,7 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
         'mobile': _mobileController.text.trim(),
         'currency': _currencyController.text.trim(),
         'token': _tokenController.text.trim(),
+        'company_id': _companyIdController.text.trim().toLowerCase(),
         'is_active': _isActive,
         'updated_at': DateTime.now().toIso8601String(),
       };
@@ -172,6 +175,8 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
                       _buildTextField(controller: _currencyController, label: 'Currency', icon: Icons.attach_money, validator: (value) => value == null || value.isEmpty ? 'Required' : null),
                       const SizedBox(height: 16),
                       _buildTextField(controller: _tokenController, label: 'Token', icon: Icons.vpn_key, validator: (value) => value == null || value.isEmpty ? 'Required' : null),
+                      const SizedBox(height: 16),
+                      _buildTextField(controller: _companyIdController, label: 'Company ID (e.g. spice)', icon: Icons.apartment, validator: (value) => value == null || value.isEmpty ? 'Required' : null),
                       const SizedBox(height: 16),
                       SwitchListTile(
                         title: const Text('Is Active', style: TextStyle(fontWeight: FontWeight.bold)),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screens/restaurant_list_screen.dart';
+import 'screens/company_login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,13 +19,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Admin Dashboard',
+      title: 'FineDine Admin Dashboard',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const RestaurantListScreen(),
+      home: const CompanyLoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
+
+
