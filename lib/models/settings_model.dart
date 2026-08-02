@@ -142,3 +142,56 @@ class AreaModel {
     };
   }
 }
+
+class TableModel {
+  final String id;
+  final String name;
+  final int capacity;
+  final String areaId;
+  final String areaName;
+  final String restId;
+
+  TableModel({
+    required this.id,
+    required this.name,
+    this.capacity = 4,
+    this.areaId = '',
+    this.areaName = '',
+    required this.restId,
+  });
+
+  factory TableModel.fromJson(Map<String, dynamic> json) {
+    String aId = '';
+    String aName = '';
+    if (json['area'] is Map<String, dynamic>) {
+      aId = json['area']['_id'] ?? json['area']['id'] ?? '';
+      aName = json['area']['name'] ?? '';
+    } else {
+      aId = json['areaId']?.toString() ?? '';
+      aName = json['areaName']?.toString() ?? '';
+    }
+
+    return TableModel(
+      id: json['_id'] ?? json['id'] ?? '',
+      name: json['name'] ?? json['tableName'] ?? json['number']?.toString() ?? '',
+      capacity: (json['capacity'] as num?)?.toInt() ?? 4,
+      areaId: aId,
+      areaName: aName,
+      restId: json['restId'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'name': name,
+      'capacity': capacity,
+      'areaId': areaId,
+      'areaName': areaName,
+      'area': areaId.isNotEmpty ? {'_id': areaId, 'name': areaName} : null,
+      'restId': restId,
+    };
+  }
+}
+
+
