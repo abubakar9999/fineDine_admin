@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/supabase_service.dart';
 import '../models/order_model.dart';
@@ -30,10 +31,15 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
 
   int _selectedIndex = 0;
   bool _isLoading = true;
+  bool _isUploading = false;
+  bool _hasUnsavedChanges = false;
+  DateTime? _lastSyncedTime;
   String? _errorMessage;
 
   List<OrderModel> _orders = [];
   Map<String, dynamic> _settingsData = {};
+
+  final timeFormatter = DateFormat('hh:mm a');
 
   @override
   void initState() {
@@ -43,7 +49,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
       _companyRestaurants = widget.companyRestaurants!;
     }
     _fetchCompanyOutletsIfNeeded();
-    _loadBackupData();
+    _loadBackupData(isInitial: true);
   }
 
   Future<void> _fetchCompanyOutletsIfNeeded() async {
@@ -63,7 +69,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
         });
       }
     } catch (_) {
-      // Fallback for demo mode
       if (widget.companyId?.toLowerCase() == 'spice' && mounted) {
         setState(() {
           _companyRestaurants = [
@@ -75,7 +80,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     }
   }
 
-  Future<void> _loadBackupData() async {
+  // Refresh data from Supabase (Sync Down)
+  Future<void> _loadBackupData({bool isInitial = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -90,7 +96,25 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
         setState(() {
           _orders = parsedOrders;
           _settingsData = parsedSettings;
+          _lastSyncedTime = DateTime.now();
+          _hasUnsavedChanges = false;
         });
+
+        if (!isInitial && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.cloud_download_rounded, color: Colors.white),
+                  SizedBox(width: 10),
+                  Text('Data refreshed successfully from Supabase!'),
+                ],
+              ),
+              backgroundColor: const Color(0xFF4F46E5),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       } else {
         setState(() {
           _errorMessage = 'No backup record found for Rest ID: $_currentRestId';
@@ -107,18 +131,75 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     }
   }
 
+  // Save settings locally (Minimize automatic Supabase hits)
   Future<void> _handleSaveSettings(Map<String, dynamic> updatedSettings) async {
+    setState(() {
+      _settingsData = updatedSettings;
+      _hasUnsavedChanges = true;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.edit_note_rounded, color: Colors.white),
+              SizedBox(width: 10),
+              Expanded(child: Text('Settings updated locally. Tap "Upload" to push to Supabase.')),
+            ],
+          ),
+          backgroundColor: const Color(0xFFD97706),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  // Upload local changes to Supabase (Sync Up)
+  Future<void> _uploadDataToSupabase() async {
+    if (_isUploading) return;
+
+    setState(() {
+      _isUploading = true;
+    });
+
     try {
-      await _supabaseService.updateSettingsData(_currentRestId, updatedSettings);
+      await _supabaseService.updateSettingsData(_currentRestId, _settingsData);
+      await _supabaseService.updateOrdersData(_currentRestId, _orders);
+
       setState(() {
-        _settingsData = updatedSettings;
+        _hasUnsavedChanges = false;
+        _lastSyncedTime = DateTime.now();
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.cloud_done_rounded, color: Colors.white),
+                SizedBox(width: 10),
+                Text('All updates successfully uploaded to Supabase!'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save settings: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed to upload data: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
     }
   }
 
@@ -153,7 +234,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
               ),
               const SizedBox(width: 10),
-              // Show Dropdown ONLY if company has multiple restaurants (> 1)
+              // Outlet selector dropdown
               if (_companyRestaurants.length > 1) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -201,7 +282,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                   ),
                 ),
               ] else ...[
-                // Simple outlet tag
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -222,24 +302,23 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                   ),
                 ),
               ],
-              if (!isVerySmall) ...[
-                const SizedBox(width: 10),
-                // Live Syncing Chip
+              if (_hasUnsavedChanges) ...[
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      CircleAvatar(radius: 3.5, backgroundColor: Color(0xFF10B981)),
+                      CircleAvatar(radius: 3, backgroundColor: Color(0xFFD97706)),
                       SizedBox(width: 4),
                       Text(
-                        'Live Sync',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
+                        'Unsaved',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFB45309)),
                       ),
                     ],
                   ),
@@ -249,6 +328,28 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
           ),
         ),
         actions: [
+          // Refresh / Sync Down Button
+          IconButton(
+            icon: const Icon(Icons.sync_rounded, color: Color(0xFF4F46E5), size: 22),
+            tooltip: _lastSyncedTime != null ? 'Refresh from Supabase (Synced ${timeFormatter.format(_lastSyncedTime!)})' : 'Refresh from Supabase',
+            onPressed: () => _loadBackupData(),
+          ),
+          // Upload / Sync Up Button
+          IconButton(
+            icon: _isUploading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
+                  )
+                : Icon(
+                    Icons.cloud_upload_rounded,
+                    color: _hasUnsavedChanges ? const Color(0xFFD97706) : const Color(0xFF10B981),
+                    size: 22,
+                  ),
+            tooltip: _hasUnsavedChanges ? 'Upload Unsaved Changes to Supabase' : 'Upload Data to Supabase',
+            onPressed: _uploadDataToSupabase,
+          ),
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B), size: 20),
             tooltip: 'Sign Out',
@@ -259,7 +360,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
               );
             },
           ),
-          SizedBox(width: isMobile ? 4 : 12),
+          SizedBox(width: isMobile ? 4 : 10),
         ],
       ),
       bottomNavigationBar: isMobile
@@ -293,7 +394,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
           : null,
       body: Row(
         children: [
-          // Sidebar / Navigation Rail (Desktop / Tablet)
           if (!isMobile) ...[
             NavigationRail(
               selectedIndex: _selectedIndex,
@@ -335,7 +435,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             ),
             const VerticalDivider(thickness: 1, width: 1, color: Color(0xFFE2E8F0)),
           ],
-          // Main Body Content
           Expanded(
             child: _isLoading
                 ? const Center(
@@ -359,7 +458,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                               Text(_errorMessage!, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
                               const SizedBox(height: 16),
                               ElevatedButton.icon(
-                                onPressed: _loadBackupData,
+                                onPressed: () => _loadBackupData(),
                                 icon: const Icon(Icons.refresh_rounded),
                                 label: const Text('Retry Connection'),
                               ),
@@ -373,11 +472,11 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                           DashboardView(
                             orders: _orders,
                             settingsData: _settingsData,
-                            onRefresh: _loadBackupData,
+                            onRefresh: () => _loadBackupData(),
                           ),
                           OrderReportsView(
                             orders: _orders,
-                            onRefresh: _loadBackupData,
+                            onRefresh: () => _loadBackupData(),
                           ),
                           SettingsView(
                             settingsData: _settingsData,
@@ -392,4 +491,3 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     );
   }
 }
-
