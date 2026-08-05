@@ -35,10 +35,18 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
   int _tablesSubTab = 0; // 0: Tables, 1: Areas
   String _tableSearchQuery = '';
 
+  int _stockSubTab = 0; // 0: Stock Levels, 1: Movement Logs, 2: Ingredients
+  String _stockSearchQuery = '';
+  String _stockStatusFilter = 'All';
+
+  int _expenseSubTab = 0; // 0: Expense History, 1: Groups & Heads
+  String _expenseSearchQuery = '';
+  String _selectedExpenseGroupFilter = 'All';
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     _localSettings = Map<String, dynamic>.from(widget.settingsData);
     _normalizeSettingsKeys();
   }
@@ -63,6 +71,14 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     final kitchens = _getKitchens();
     final bars = _getBars();
     final paymentMethods = _getPaymentMethods();
+    final customers = _getCustomers();
+    final expenseGroups = _getExpenseGroups();
+    final expenseHeads = _getExpenseHeads();
+    final expenseItems = _getExpenseItems();
+    final stocks = _getStocks();
+    final stockLogs = _getStockLogs();
+    final ingredients = _getIngredients();
+    final recipes = _getRecipes();
 
     _localSettings['items'] = items;
     _localSettings['foodSettingData'] = items;
@@ -101,6 +117,15 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
     _localSettings['paymentMethods'] = paymentMethods;
     _localSettings['paymentMethodSettingData'] = paymentMethods;
+
+    _saveCustomers(customers);
+    _saveExpenseGroups(expenseGroups);
+    _saveExpenseHeads(expenseHeads);
+    _saveExpenseItems(expenseItems);
+    _saveStocks(stocks);
+    _saveStockLogs(stockLogs);
+    _saveIngredients(ingredients);
+    _saveRecipes(recipes);
 
     // Sync inside total_data_table structure if present
     if (_localSettings['total_data_table'] is List) {
@@ -146,6 +171,30 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
           } else if (mutableObj.containsKey('paymentMethodSettingData') || mutableObj['paymentMethod_data_table'] == 'paymentMethodTable') {
             mutableObj['paymentMethodSettingData'] = paymentMethods;
             totalList[i] = mutableObj;
+          } else if (mutableObj.containsKey('customerData') && mutableObj['customer_data_table'] == 'customerTable') {
+            mutableObj['customerData'] = customers;
+            totalList[i] = mutableObj;
+          } else if (mutableObj.containsKey('expenseGroupData') || mutableObj['expense_group_data_table'] == 'expenseGroupTable') {
+            mutableObj['expenseGroupData'] = expenseGroups;
+            totalList[i] = mutableObj;
+          } else if (mutableObj.containsKey('expenseHeadData') || mutableObj['expense_head_data_table'] == 'expenseHeadTable') {
+            mutableObj['expenseHeadData'] = expenseHeads;
+            totalList[i] = mutableObj;
+          } else if (mutableObj.containsKey('expenseItemData') || mutableObj['expense_item_data_table'] == 'expenseItemTable') {
+            mutableObj['expenseItemData'] = expenseItems;
+            totalList[i] = mutableObj;
+          } else if (mutableObj.containsKey('stockData') || mutableObj['stock_data_table'] == 'stockTable') {
+            mutableObj['stockData'] = stocks;
+            totalList[i] = mutableObj;
+          } else if (mutableObj.containsKey('stockLogData') || mutableObj['stock_log_data_table'] == 'stockLogTable') {
+            mutableObj['stockLogData'] = stockLogs;
+            totalList[i] = mutableObj;
+          } else if (mutableObj.containsKey('ingredientData') || mutableObj['ingredient_data_table'] == 'ingredientTable') {
+            mutableObj['ingredientData'] = ingredients;
+            totalList[i] = mutableObj;
+          } else if (mutableObj.containsKey('recipeData') || mutableObj['recipe_data_table'] == 'recipeTable') {
+            mutableObj['recipeData'] = recipes;
+            totalList[i] = mutableObj;
           }
         }
       }
@@ -187,6 +236,14 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
   List<Map<String, dynamic>> _getKitchens() => _extractArray(['kitchenData', 'kitchens']);
   List<Map<String, dynamic>> _getBars() => _extractArray(['barData', 'bars']);
   List<Map<String, dynamic>> _getPaymentMethods() => _extractArray(['paymentMethodSettingData', 'paymentMethods']);
+  List<Map<String, dynamic>> _getCustomers() => _extractArray(['customerData', 'customers']);
+  List<Map<String, dynamic>> _getExpenseGroups() => _extractArray(['expenseGroupData', 'expenseGroups']);
+  List<Map<String, dynamic>> _getExpenseHeads() => _extractArray(['expenseHeadData', 'expenseHeads']);
+  List<Map<String, dynamic>> _getExpenseItems() => _extractArray(['expenseItemData', 'expenseItems']);
+  List<Map<String, dynamic>> _getStocks() => _extractArray(['stockData', 'stocks']);
+  List<Map<String, dynamic>> _getStockLogs() => _extractArray(['stockLogData', 'stockLogs']);
+  List<Map<String, dynamic>> _getIngredients() => _extractArray(['ingredientData', 'ingredients']);
+  List<Map<String, dynamic>> _getRecipes() => _extractArray(['recipeData', 'recipes']);
 
   void _updateListForKey(List<String> keys, List<Map<String, dynamic>> newList) {
     for (var key in keys) {
@@ -223,6 +280,14 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
   void _saveTills(List<Map<String, dynamic>> tills) => _updateListForKey(['tillData', 'tills'], tills);
   void _saveKitchens(List<Map<String, dynamic>> kitchens) => _updateListForKey(['kitchenData', 'kitchens'], kitchens);
   void _saveBars(List<Map<String, dynamic>> bars) => _updateListForKey(['barData', 'bars'], bars);
+  void _saveCustomers(List<Map<String, dynamic>> customers) => _updateListForKey(['customerData', 'customers'], customers);
+  void _saveExpenseGroups(List<Map<String, dynamic>> groups) => _updateListForKey(['expenseGroupData', 'expenseGroups'], groups);
+  void _saveExpenseHeads(List<Map<String, dynamic>> heads) => _updateListForKey(['expenseHeadData', 'expenseHeads'], heads);
+  void _saveExpenseItems(List<Map<String, dynamic>> items) => _updateListForKey(['expenseItemData', 'expenseItems'], items);
+  void _saveStocks(List<Map<String, dynamic>> stocks) => _updateListForKey(['stockData', 'stocks'], stocks);
+  void _saveStockLogs(List<Map<String, dynamic>> logs) => _updateListForKey(['stockLogData', 'stockLogs'], logs);
+  void _saveIngredients(List<Map<String, dynamic>> ingredients) => _updateListForKey(['ingredientData', 'ingredients'], ingredients);
+  void _saveRecipes(List<Map<String, dynamic>> recipes) => _updateListForKey(['recipeData', 'recipes'], recipes);
 
   Future<void> _persistChanges() async {
     setState(() => _isSaving = true);
@@ -384,6 +449,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               Tab(icon: Icon(Icons.table_restaurant), text: 'Tables & Areas'),
               Tab(icon: Icon(Icons.people), text: 'Staff & Tills'),
               Tab(icon: Icon(Icons.local_offer), text: 'Promotions & Offers'),
+              Tab(icon: Icon(Icons.inventory_2_rounded), text: 'Stock Management'),
+              Tab(icon: Icon(Icons.account_balance_wallet_rounded), text: 'Expense Management'),
             ],
           ),
           SizedBox(height: isMobile ? 10 : 16),
@@ -396,6 +463,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 _buildTablesAndAreasTab(),
                 _buildStaffAndTillsTab(),
                 _buildPromotionsTab(),
+                _buildStockManagementTab(),
+                _buildExpenseManagementTab(),
               ],
             ),
           ),
@@ -596,7 +665,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Portions: ${portions.length} ${portions.isNotEmpty ? "(${portions.map((p) => "${p['portionName'] ?? ''}: \$${p['portionPriceDineIn'] ?? p['portionPrice'] ?? 0}").join(', ')})" : ""}',
+                              'Portions: ${portions.length} ${portions.isNotEmpty ? "(${portions.map((p) => "${p['portionName'] ?? ''}: ৳${p['portionPriceDineIn'] ?? p['portionPrice'] ?? 0}").join(', ')})" : ""}',
                               style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
                             ),
                           ],
@@ -838,7 +907,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                             child: TextFormField(
                               initialValue: priceVal.toString(),
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: const InputDecoration(labelText: 'Price (\$)', isDense: true, border: InputBorder.none),
+                              decoration: const InputDecoration(labelText: 'Price (৳)', isDense: true, border: InputBorder.none),
                               onChanged: (val) {
                                 final parsedPrice = double.tryParse(val.trim()) ?? 0.0;
                                 p['portionPriceDineIn'] = parsedPrice;
@@ -873,7 +942,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                         child: TextField(
                           controller: portionPriceCtrl,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: const InputDecoration(labelText: 'Price (\$)', isDense: true),
+                          decoration: const InputDecoration(labelText: 'Price (৳)', isDense: true),
                         ),
                       ),
                       IconButton(
@@ -1446,7 +1515,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                         DataCell(Text(item['name'] ?? '', overflow: TextOverflow.ellipsis)),
                         DataCell(Text(item['shortName'] ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 12))),
                         DataCell(Text(portionName.toString())),
-                        DataCell(Text('\$${(price is num ? price : 0).toStringAsFixed(2)}')),
+                        DataCell(Text('৳${(price is num ? price : 0).toStringAsFixed(2)}')),
                         DataCell(Text(catName.toString(), style: TextStyle(color: Colors.indigo.shade600, fontSize: 12))),
                       ]);
                     }).toList(),
@@ -2230,7 +2299,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                           child: Icon(Icons.point_of_sale, color: Colors.amber.shade900),
                         ),
                         title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Till ID: $tillId | Total: \$$total'),
+                        subtitle: Text('Till ID: $tillId | Total: ৳$total'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -2802,6 +2871,1323 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 }
               },
               child: const Text('Save Promotion'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // --- 6. STOCK MANAGEMENT TAB (VIEW & ENTRY) ---
+  // ==========================================
+  Widget _buildStockKpiCard(String title, String subtitle, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade600)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStockManagementTab() {
+    final stocks = _getStocks();
+    final stockLogs = _getStockLogs();
+    final ingredients = _getIngredients();
+    final foodItems = _getItems();
+
+    int lowStockCount = 0;
+    int outOfStockCount = 0;
+    double totalValuation = 0.0;
+
+    for (var s in stocks) {
+      final current = (s['currentStock'] as num?)?.toDouble() ?? 0.0;
+      final alert = (s['minStockAlert'] as num?)?.toDouble() ?? 0.0;
+      final cost = (s['costPrice'] as num?)?.toDouble() ?? 0.0;
+
+      if (current <= 0) {
+        outOfStockCount++;
+      } else if (current <= alert) {
+        lowStockCount++;
+      }
+      totalValuation += (current * cost);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
+                  label: Text('Stock View (${stocks.length})'),
+                  selected: _stockSubTab == 0,
+                  onSelected: (val) { if (val) setState(() => _stockSubTab = 0); },
+                ),
+                ChoiceChip(
+                  label: Text('Movement Logs (${stockLogs.length})'),
+                  selected: _stockSubTab == 1,
+                  onSelected: (val) { if (val) setState(() => _stockSubTab = 1); },
+                ),
+                ChoiceChip(
+                  label: Text('Ingredients (${ingredients.length})'),
+                  selected: _stockSubTab == 2,
+                  onSelected: (val) { if (val) setState(() => _stockSubTab = 2); },
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                if (_stockSubTab == 0) ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+                    onPressed: () => _showRecordStockMovementDialog(),
+                    icon: const Icon(Icons.sync_alt_rounded, size: 18),
+                    label: const Text('Record Movement'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                    onPressed: () => _showAddEditStockDialog(),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add Stock Entry'),
+                  ),
+                ] else if (_stockSubTab == 1) ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+                    onPressed: () => _showRecordStockMovementDialog(),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('New Movement Entry'),
+                  ),
+                ] else if (_stockSubTab == 2) ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                    onPressed: () => _showAddEditIngredientDialog(),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add Ingredient'),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildStockKpiCard('Total Tracked', '${stocks.length} Items', Icons.inventory, Colors.indigo),
+            const SizedBox(width: 12),
+            _buildStockKpiCard('Low Stock Alert', '$lowStockCount Items', Icons.warning_amber_rounded, Colors.orange),
+            const SizedBox(width: 12),
+            _buildStockKpiCard('Out of Stock', '$outOfStockCount Items', Icons.do_not_disturb_on_rounded, Colors.red),
+            const SizedBox(width: 12),
+            _buildStockKpiCard('Stock Value', '৳${totalValuation.toStringAsFixed(2)}', Icons.payments_rounded, Colors.teal),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: _stockSubTab == 0
+              ? _buildStockLevelsView(stocks, foodItems)
+              : _stockSubTab == 1
+                  ? _buildStockLogsView(stockLogs)
+                  : _buildIngredientsView(ingredients),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStockLevelsView(List<Map<String, dynamic>> stocks, List<Map<String, dynamic>> foodItems) {
+    final filtered = stocks.where((s) {
+      final name = (s['foodItemName'] ?? '').toString().toLowerCase();
+      final matchesQuery = name.contains(_stockSearchQuery.toLowerCase());
+
+      final current = (s['currentStock'] as num?)?.toDouble() ?? 0.0;
+      final alert = (s['minStockAlert'] as num?)?.toDouble() ?? 0.0;
+
+      bool matchesStatus = true;
+      if (_stockStatusFilter == 'Low Stock') {
+        matchesStatus = current > 0 && current <= alert;
+      } else if (_stockStatusFilter == 'Out of Stock') {
+        matchesStatus = current <= 0;
+      } else if (_stockStatusFilter == 'In Stock') {
+        matchesStatus = current > alert;
+      }
+
+      return matchesQuery && matchesStatus;
+    }).toList();
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                onChanged: (val) => setState(() => _stockSearchQuery = val),
+                decoration: InputDecoration(
+                  hintText: 'Search stock items by name...',
+                  prefixIcon: const Icon(Icons.search),
+                  isDense: true,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            DropdownButton<String>(
+              value: _stockStatusFilter,
+              onChanged: (val) => setState(() => _stockStatusFilter = val!),
+              items: ['All', 'In Stock', 'Low Stock', 'Out of Stock'].map((st) {
+                return DropdownMenuItem(value: st, child: Text(st));
+              }).toList(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: filtered.isEmpty
+              ? const Center(child: Text('No stock items recorded yet. Click "Add Stock Entry" to create one.'))
+              : ListView.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final item = filtered[index];
+                    final current = (item['currentStock'] as num?)?.toDouble() ?? 0.0;
+                    final alert = (item['minStockAlert'] as num?)?.toDouble() ?? 0.0;
+                    final cost = (item['costPrice'] as num?)?.toDouble() ?? 0.0;
+                    final unit = item['unit'] ?? 'pcs';
+
+                    Color statusColor = Colors.green;
+                    String statusText = 'In Stock';
+                    if (current <= 0) {
+                      statusColor = Colors.red;
+                      statusText = 'Out of Stock';
+                    } else if (current <= alert) {
+                      statusColor = Colors.orange;
+                      statusText = 'Low Stock Alert';
+                    }
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      leading: CircleAvatar(
+                        backgroundColor: statusColor.withOpacity(0.1),
+                        child: Icon(
+                          current <= 0
+                              ? Icons.do_not_disturb_on_rounded
+                              : current <= alert
+                                  ? Icons.warning_amber_rounded
+                                  : Icons.check_circle_outline_rounded,
+                          color: statusColor,
+                        ),
+                      ),
+                      title: Text(item['foodItemName'] ?? 'Unknown Item', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text('Min Alert: $alert $unit | Cost: ৳${cost.toStringAsFixed(2)} | Total Val: ৳${(current * cost).toStringAsFixed(2)}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: statusColor),
+                            ),
+                            child: Text(
+                              '$current $unit ($statusText)',
+                              style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 20, color: Colors.indigo),
+                            onPressed: () => _showAddEditStockDialog(stockItem: item, index: index),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.sync_alt_rounded, size: 20, color: Colors.teal),
+                            tooltip: 'Record Movement / Purchase',
+                            onPressed: () => _showRecordStockMovementDialog(preselectedStockId: item['id'] ?? item['_id']),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                            onPressed: () async {
+                              final confirm = await _showDeleteConfirmation('Delete Stock Entry', 'Are you sure you want to delete "${item['foodItemName']}"?');
+                              if (confirm == true) {
+                                final list = _getStocks();
+                                setState(() {
+                                  list.removeWhere((element) => (element['_id'] ?? element['id']) == (item['_id'] ?? item['id']));
+                                  _saveStocks(list);
+                                });
+                                _persistChanges();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStockLogsView(List<Map<String, dynamic>> stockLogs) {
+    if (stockLogs.isEmpty) {
+      return const Center(child: Text('No stock movement logs recorded yet. Use "Record Movement" to add entries.'));
+    }
+
+    return ListView.separated(
+      itemCount: stockLogs.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final log = stockLogs[index];
+        final type = (log['type'] ?? 'movement').toString().toUpperCase();
+        final change = (log['changeQty'] as num?)?.toDouble() ?? 0.0;
+        final prev = (log['previousQty'] as num?)?.toDouble() ?? 0.0;
+        final newQty = (log['newQty'] as num?)?.toDouble() ?? 0.0;
+
+        Color badgeColor = Colors.blue;
+        if (type.contains('PURCHASE')) badgeColor = Colors.green;
+        if (type.contains('SPOILAGE') || type.contains('WASTE')) badgeColor = Colors.red;
+        if (type.contains('USAGE') || type.contains('SALE')) badgeColor = Colors.orange;
+
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: badgeColor.withOpacity(0.1),
+            child: Icon(change >= 0 ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded, color: badgeColor),
+          ),
+          title: Text('${log['foodItemName'] ?? 'Item'} (${change >= 0 ? "+$change" : "$change"})', style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text('Prev: $prev ➔ New: $newQty | Staff: ${log['staffName'] ?? 'Staff'} | Note: ${log['note'] ?? 'N/A'}'),
+          trailing: Text(
+            log['timestamp']?.toString().split('T').first ?? '',
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildIngredientsView(List<Map<String, dynamic>> ingredients) {
+    if (ingredients.isEmpty) {
+      return const Center(child: Text('No ingredients recorded yet. Click "Add Ingredient" to create one.'));
+    }
+
+    return ListView.separated(
+      itemCount: ingredients.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final ing = ingredients[index];
+        final current = (ing['currentStock'] as num?)?.toDouble() ?? 0.0;
+        final alert = (ing['minStockAlert'] as num?)?.toDouble() ?? 0.0;
+        final unit = ing['unit'] ?? 'kg';
+
+        return ListTile(
+          leading: const CircleAvatar(backgroundColor: Color(0xFFEEF2FF), child: Icon(Icons.grass_rounded, color: Colors.indigo)),
+          title: Text(ing['name'] ?? 'Ingredient', style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text('Alert: $alert $unit | Supplier: ${ing['supplierName'] ?? 'N/A'} | Cost/Unit: ৳${(ing['costPerUnit'] as num?)?.toStringAsFixed(2) ?? "0.00"}'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Chip(label: Text('$current $unit'), backgroundColor: const Color(0xFFEEF2FF)),
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.indigo),
+                onPressed: () => _showAddEditIngredientDialog(ingredient: ing, index: index),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () async {
+                  final confirm = await _showDeleteConfirmation('Delete Ingredient', 'Are you sure you want to delete "${ing['name']}"?');
+                  if (confirm == true) {
+                    final list = _getIngredients();
+                    setState(() {
+                      list.removeAt(index);
+                      _saveIngredients(list);
+                    });
+                    _persistChanges();
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddEditStockDialog({Map<String, dynamic>? stockItem, int? index}) {
+    final foodItems = _getItems();
+    String? selectedFoodId = stockItem?['foodItemId'];
+    String foodName = stockItem?['foodItemName'] ?? '';
+    final stockCtrl = TextEditingController(text: stockItem != null ? (stockItem['currentStock'] ?? 0).toString() : '100');
+    final alertCtrl = TextEditingController(text: stockItem != null ? (stockItem['minStockAlert'] ?? 5).toString() : '5');
+    final unitCtrl = TextEditingController(text: stockItem?['unit'] ?? 'pcs');
+    final costCtrl = TextEditingController(text: stockItem != null ? (stockItem['costPrice'] ?? 0).toString() : '0');
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(stockItem != null ? 'Edit Stock Entry' : 'Add New Stock Entry'),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: 450,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Select Food Item:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: selectedFoodId != null && foodItems.any((f) => (f['_id'] ?? f['id']) == selectedFoodId) ? selectedFoodId : null,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                    hint: const Text('Pick Food Item'),
+                    items: foodItems.map((item) {
+                      final id = (item['_id'] ?? item['id']).toString();
+                      return DropdownMenuItem(value: id, child: Text(item['name'] ?? 'Unnamed'));
+                    }).toList(),
+                    onChanged: (val) {
+                      setDialogState(() {
+                        selectedFoodId = val;
+                        final matched = foodItems.firstWhere((f) => (f['_id'] ?? f['id']).toString() == val, orElse: () => {});
+                        foodName = matched['name'] ?? '';
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: stockCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(labelText: 'Current Stock Qty', border: OutlineInputBorder(), isDense: true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          controller: alertCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(labelText: 'Min Alert Qty', border: OutlineInputBorder(), isDense: true),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: unitCtrl,
+                          decoration: const InputDecoration(labelText: 'Unit (pcs, kg, L, etc)', border: OutlineInputBorder(), isDense: true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          controller: costCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(labelText: 'Cost Price', border: OutlineInputBorder(), isDense: true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+              onPressed: () {
+                if (selectedFoodId != null && selectedFoodId!.isNotEmpty) {
+                  final idStr = stockItem?['_id'] ?? stockItem?['id'] ?? 'stock_$selectedFoodId';
+                  final newEntry = {
+                    '_id': idStr,
+                    'id': idStr,
+                    'foodItemId': selectedFoodId,
+                    'foodItemName': foodName,
+                    'portionId': '',
+                    'portionName': '',
+                    'currentStock': double.tryParse(stockCtrl.text.trim()) ?? 0,
+                    'minStockAlert': double.tryParse(alertCtrl.text.trim()) ?? 5,
+                    'unit': unitCtrl.text.trim().isNotEmpty ? unitCtrl.text.trim() : 'pcs',
+                    'costPrice': double.tryParse(costCtrl.text.trim()) ?? 0,
+                    'isTracked': true,
+                    'restId': widget.restId,
+                    'updatedAt': DateTime.now().toIso8601String(),
+                  };
+
+                  final list = _getStocks();
+                  setState(() {
+                    if (index != null && index >= 0 && index < list.length) {
+                      list[index] = newEntry;
+                    } else {
+                      final existingIdx = list.indexWhere((element) => (element['foodItemId'] == selectedFoodId));
+                      if (existingIdx != -1) {
+                        list[existingIdx] = newEntry;
+                      } else {
+                        list.add(newEntry);
+                      }
+                    }
+                    _saveStocks(list);
+                  });
+                  _persistChanges();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save Stock Entry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRecordStockMovementDialog({String? preselectedStockId}) {
+    final stocks = _getStocks();
+    if (stocks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add at least one Stock Entry first!')));
+      return;
+    }
+
+    String? selectedStockId = preselectedStockId ?? (stocks.first['_id'] ?? stocks.first['id']);
+    String actionType = 'purchase'; // purchase, usage, spoilage, adjustment
+    final qtyCtrl = TextEditingController(text: '10');
+    final staffCtrl = TextEditingController(text: 'Staff');
+    final noteCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Record Stock Movement / Adjustment'),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: 450,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Select Stock Item:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: stocks.any((s) => (s['_id'] ?? s['id']) == selectedStockId) ? selectedStockId : (stocks.first['_id'] ?? stocks.first['id']),
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                    items: stocks.map((s) {
+                      final id = (s['_id'] ?? s['id']).toString();
+                      return DropdownMenuItem(value: id, child: Text('${s['foodItemName']} (Current: ${s['currentStock']} ${s['unit'] ?? "pcs"})'));
+                    }).toList(),
+                    onChanged: (val) => setDialogState(() => selectedStockId = val),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Movement Action:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: actionType,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                    items: const [
+                      DropdownMenuItem(value: 'purchase', child: Text('Stock Purchase (+)')),
+                      DropdownMenuItem(value: 'usage', child: Text('Stock Usage / Sale (-)')),
+                      DropdownMenuItem(value: 'spoilage', child: Text('Spoilage / Waste (-)')),
+                      DropdownMenuItem(value: 'adjustment', child: Text('Manual Reset / Set Qty')),
+                    ],
+                    onChanged: (val) => setDialogState(() => actionType = val!),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: qtyCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(), isDense: true),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: staffCtrl,
+                    decoration: const InputDecoration(labelText: 'Staff Name', border: OutlineInputBorder(), isDense: true),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: noteCtrl,
+                    decoration: const InputDecoration(labelText: 'Notes / Voucher Reference', border: OutlineInputBorder(), isDense: true),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+              onPressed: () {
+                final changeVal = double.tryParse(qtyCtrl.text.trim()) ?? 0;
+                final targetIndex = stocks.indexWhere((s) => (s['_id'] ?? s['id']) == selectedStockId);
+                if (targetIndex != -1) {
+                  final target = stocks[targetIndex];
+                  final double prevQty = (target['currentStock'] as num?)?.toDouble() ?? 0.0;
+                  double newQty = prevQty;
+                  double actualChange = changeVal;
+
+                  if (actionType == 'purchase') {
+                    newQty = prevQty + changeVal;
+                  } else if (actionType == 'usage' || actionType == 'spoilage') {
+                    newQty = prevQty - changeVal;
+                    actualChange = -changeVal;
+                  } else if (actionType == 'adjustment') {
+                    newQty = changeVal;
+                    actualChange = newQty - prevQty;
+                  }
+
+                  target['currentStock'] = newQty;
+                  target['updatedAt'] = DateTime.now().toIso8601String();
+                  stocks[targetIndex] = target;
+
+                  final logs = _getStockLogs();
+                  final logId = 'log_${DateTime.now().millisecondsSinceEpoch}';
+                  logs.insert(0, {
+                    '_id': logId,
+                    'id': logId,
+                    'stockItemId': selectedStockId,
+                    'foodItemId': target['foodItemId'],
+                    'foodItemName': target['foodItemName'],
+                    'changeQty': actualChange,
+                    'previousQty': prevQty,
+                    'newQty': newQty,
+                    'type': actionType,
+                    'staffName': staffCtrl.text.trim().isNotEmpty ? staffCtrl.text.trim() : 'Staff',
+                    'note': noteCtrl.text.trim(),
+                    'timestamp': DateTime.now().toIso8601String(),
+                  });
+
+                  setState(() {
+                    _saveStocks(stocks);
+                    _saveStockLogs(logs);
+                  });
+                  _persistChanges();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save Movement'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddEditIngredientDialog({Map<String, dynamic>? ingredient, int? index}) {
+    final nameCtrl = TextEditingController(text: ingredient?['name'] ?? '');
+    final unitCtrl = TextEditingController(text: ingredient?['unit'] ?? 'kg');
+    final stockCtrl = TextEditingController(text: ingredient != null ? (ingredient['currentStock'] ?? 0).toString() : '50');
+    final alertCtrl = TextEditingController(text: ingredient != null ? (ingredient['minStockAlert'] ?? 2).toString() : '2');
+    final costCtrl = TextEditingController(text: ingredient != null ? (ingredient['costPerUnit'] ?? 0).toString() : '0');
+    final supplierCtrl = TextEditingController(text: ingredient?['supplierName'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(ingredient != null ? 'Edit Ingredient' : 'Add New Ingredient'),
+        content: SingleChildScrollView(
+          child: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Ingredient Name', border: OutlineInputBorder(), isDense: true),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: unitCtrl,
+                        decoration: const InputDecoration(labelText: 'Unit (kg, L, g)', border: OutlineInputBorder(), isDense: true),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: stockCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(labelText: 'Current Stock', border: OutlineInputBorder(), isDense: true),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: alertCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(labelText: 'Min Alert Qty', border: OutlineInputBorder(), isDense: true),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: costCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(labelText: 'Cost / Unit', border: OutlineInputBorder(), isDense: true),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: supplierCtrl,
+                  decoration: const InputDecoration(labelText: 'Supplier Name', border: OutlineInputBorder(), isDense: true),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+            onPressed: () {
+              if (nameCtrl.text.trim().isNotEmpty) {
+                final idStr = ingredient?['_id'] ?? ingredient?['id'] ?? 'ing_${DateTime.now().millisecondsSinceEpoch}';
+                final newIng = {
+                  '_id': idStr,
+                  'id': idStr,
+                  'name': nameCtrl.text.trim(),
+                  'unit': unitCtrl.text.trim().isNotEmpty ? unitCtrl.text.trim() : 'kg',
+                  'currentStock': double.tryParse(stockCtrl.text.trim()) ?? 0,
+                  'minStockAlert': double.tryParse(alertCtrl.text.trim()) ?? 2,
+                  'costPerUnit': double.tryParse(costCtrl.text.trim()) ?? 0,
+                  'supplierName': supplierCtrl.text.trim(),
+                  'restId': widget.restId,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                };
+
+                final list = _getIngredients();
+                setState(() {
+                  if (index != null && index >= 0 && index < list.length) {
+                    list[index] = newIng;
+                  } else {
+                    list.add(newIng);
+                  }
+                  _saveIngredients(list);
+                });
+                _persistChanges();
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save Ingredient'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // --- 7. EXPENSE MANAGEMENT TAB (VIEW & ENTRY) ---
+  // ==========================================
+  Widget _buildExpenseManagementTab() {
+    final expenseItems = _getExpenseItems();
+    final expenseGroups = _getExpenseGroups();
+    final expenseHeads = _getExpenseHeads();
+
+    double totalAmount = 0.0;
+    for (var exp in expenseItems) {
+      totalAmount += (exp['amount'] as num?)?.toDouble() ?? 0.0;
+    }
+
+    final groupNames = ['All', ...expenseGroups.map((g) => g['name']?.toString() ?? '').where((n) => n.isNotEmpty)];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
+                  label: Text('Expense Entries View (${expenseItems.length})'),
+                  selected: _expenseSubTab == 0,
+                  onSelected: (val) { if (val) setState(() => _expenseSubTab = 0); },
+                ),
+                ChoiceChip(
+                  label: Text('Groups & Heads (${expenseGroups.length}/${expenseHeads.length})'),
+                  selected: _expenseSubTab == 1,
+                  onSelected: (val) { if (val) setState(() => _expenseSubTab = 1); },
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+                  onPressed: () => _showAddEditExpenseGroupDialog(),
+                  icon: const Icon(Icons.folder_open_rounded, size: 18),
+                  label: const Text('Add Group'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                  onPressed: () => _showAddEditExpenseHeadDialog(),
+                  icon: const Icon(Icons.sell_rounded, size: 18),
+                  label: const Text('Add Head'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                  onPressed: () => _showAddEditExpenseItemDialog(),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Expense Entry'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildStockKpiCard('Total Expenses', '৳${totalAmount.toStringAsFixed(2)}', Icons.account_balance_wallet_rounded, Colors.purple),
+            const SizedBox(width: 12),
+            _buildStockKpiCard('Total Vouchers', '${expenseItems.length} Entries', Icons.receipt_rounded, Colors.blue),
+            const SizedBox(width: 12),
+            _buildStockKpiCard('Expense Groups', '${expenseGroups.length} Groups', Icons.folder_open_rounded, Colors.orange),
+            const SizedBox(width: 12),
+            _buildStockKpiCard('Expense Heads', '${expenseHeads.length} Heads', Icons.sell_rounded, Colors.teal),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: _expenseSubTab == 0
+              ? _buildExpenseItemsView(expenseItems, groupNames)
+              : _buildExpenseGroupsHeadsView(expenseGroups, expenseHeads),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpenseItemsView(List<Map<String, dynamic>> expenseItems, List<String> groupNames) {
+    final filtered = expenseItems.where((exp) {
+      final note = (exp['note'] ?? '').toString().toLowerCase();
+      final head = (exp['headName'] ?? '').toString().toLowerCase();
+      final group = (exp['groupName'] ?? '').toString().toLowerCase();
+      final staff = (exp['staffName'] ?? '').toString().toLowerCase();
+      final voucher = (exp['voucherNo'] ?? '').toString().toLowerCase();
+
+      final q = _expenseSearchQuery.toLowerCase();
+      final matchesQuery = note.contains(q) || head.contains(q) || group.contains(q) || staff.contains(q) || voucher.contains(q);
+
+      final matchesGroup = _selectedExpenseGroupFilter == 'All' || (exp['groupName'] == _selectedExpenseGroupFilter);
+
+      return matchesQuery && matchesGroup;
+    }).toList();
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                onChanged: (val) => setState(() => _expenseSearchQuery = val),
+                decoration: InputDecoration(
+                  hintText: 'Search expense by head, voucher #, staff or notes...',
+                  prefixIcon: const Icon(Icons.search),
+                  isDense: true,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            DropdownButton<String>(
+              value: groupNames.contains(_selectedExpenseGroupFilter) ? _selectedExpenseGroupFilter : 'All',
+              onChanged: (val) => setState(() => _selectedExpenseGroupFilter = val!),
+              items: groupNames.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: filtered.isEmpty
+              ? const Center(child: Text('No expense entries found. Click "Add Expense Entry" to record one.'))
+              : ListView.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final item = filtered[index];
+                    final amt = (item['amount'] as num?)?.toDouble() ?? 0.0;
+                    final dateStr = item['date']?.toString().split('T').first ?? '';
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      leading: const CircleAvatar(backgroundColor: Color(0xFFFEF2F2), child: Icon(Icons.receipt_long_rounded, color: Colors.redAccent)),
+                      title: Row(
+                        children: [
+                          Text(item['headName'] ?? 'Expense Head', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 8),
+                          Chip(label: Text(item['groupName'] ?? 'Group', style: const TextStyle(fontSize: 10)), backgroundColor: const Color(0xFFEEF2FF)),
+                        ],
+                      ),
+                      subtitle: Text('Type: ${item['expenseType'] ?? "One-Time"} | Method: ${item['paymentMethod'] ?? "Cash"} | Staff: ${item['staffName'] ?? "Staff"} ${item['note'] != null && item['note'].isNotEmpty ? "| Note: ${item['note']}" : ""}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('৳${amt.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                              Text(dateStr, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 20, color: Colors.indigo),
+                            onPressed: () => _showAddEditExpenseItemDialog(expenseItem: item, index: index),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                            onPressed: () async {
+                              final confirm = await _showDeleteConfirmation('Delete Expense Entry', 'Are you sure you want to delete this expense of ৳${amt.toStringAsFixed(2)}?');
+                              if (confirm == true) {
+                                final list = _getExpenseItems();
+                                setState(() {
+                                  list.removeWhere((e) => (e['_id'] ?? e['id']) == (item['_id'] ?? item['id']));
+                                  _saveExpenseItems(list);
+                                });
+                                _persistChanges();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpenseGroupsHeadsView(List<Map<String, dynamic>> groups, List<Map<String, dynamic>> heads) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left Column: Expense Groups
+        Expanded(
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Expense Groups', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+                        onPressed: () => _showAddEditExpenseGroupDialog(),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add Group'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: groups.isEmpty
+                        ? const Center(child: Text('No Expense Groups defined.'))
+                        : ListView.separated(
+                            itemCount: groups.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final grp = groups[index];
+                              return ListTile(
+                                leading: const Icon(Icons.folder_open_rounded, color: Colors.orange),
+                                title: Text(grp['name'] ?? 'Group Name', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text(grp['description'] ?? ''),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.edit, size: 18, color: Colors.indigo),
+                                  onPressed: () => _showAddEditExpenseGroupDialog(group: grp, index: index),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Right Column: Expense Heads
+        Expanded(
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Expense Heads', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                        onPressed: () => _showAddEditExpenseHeadDialog(),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add Head'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: heads.isEmpty
+                        ? const Center(child: Text('No Expense Heads defined.'))
+                        : ListView.separated(
+                            itemCount: heads.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final h = heads[index];
+                              return ListTile(
+                                leading: const Icon(Icons.sell_rounded, color: Colors.teal),
+                                title: Text(h['name'] ?? 'Head Name', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text('Group: ${h['groupName'] ?? "N/A"}'),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.edit, size: 18, color: Colors.indigo),
+                                  onPressed: () => _showAddEditExpenseHeadDialog(head: h, index: index),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddEditExpenseItemDialog({Map<String, dynamic>? expenseItem, int? index}) {
+    final heads = _getExpenseHeads();
+
+    String? selectedHeadId = expenseItem?['headId'];
+    String headName = expenseItem?['headName'] ?? '';
+    String groupId = expenseItem?['groupId'] ?? '';
+    String groupName = expenseItem?['groupName'] ?? '';
+
+    if (selectedHeadId == null && heads.isNotEmpty) {
+      selectedHeadId = heads.first['_id'] ?? heads.first['id'];
+      headName = heads.first['name'] ?? '';
+      groupId = heads.first['groupId'] ?? '';
+      groupName = heads.first['groupName'] ?? '';
+    }
+
+    String expenseType = expenseItem?['expenseType'] ?? 'One-Time';
+    String paymentMethod = expenseItem?['paymentMethod'] ?? 'Cash';
+    final amountCtrl = TextEditingController(text: expenseItem != null ? (expenseItem['amount'] ?? 0).toString() : '');
+    final staffCtrl = TextEditingController(text: expenseItem?['staffName'] ?? 'Staff');
+    final voucherCtrl = TextEditingController(text: expenseItem?['voucherNo'] ?? '');
+    final noteCtrl = TextEditingController(text: expenseItem?['note'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(expenseItem != null ? 'Edit Expense Entry' : 'Add New Expense Entry'),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: 450,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Select Expense Head:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<String>(
+                    value: heads.any((h) => (h['_id'] ?? h['id']) == selectedHeadId) ? selectedHeadId : null,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                    hint: const Text('Pick Expense Head'),
+                    items: heads.map((h) {
+                      final id = (h['_id'] ?? h['id']).toString();
+                      return DropdownMenuItem(value: id, child: Text('${h['name']} (${h['groupName'] ?? "General"})'));
+                    }).toList(),
+                    onChanged: (val) {
+                      setDialogState(() {
+                        selectedHeadId = val;
+                        final matched = heads.firstWhere((h) => (h['_id'] ?? h['id']).toString() == val, orElse: () => {});
+                        headName = matched['name'] ?? '';
+                        groupId = matched['groupId'] ?? '';
+                        groupName = matched['groupName'] ?? '';
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: expenseType,
+                          decoration: const InputDecoration(labelText: 'Expense Type', border: OutlineInputBorder(), isDense: true),
+                          items: const [
+                            DropdownMenuItem(value: 'One-Time', child: Text('One-Time')),
+                            DropdownMenuItem(value: 'Recurring', child: Text('Recurring')),
+                          ],
+                          onChanged: (val) => setDialogState(() => expenseType = val!),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: paymentMethod,
+                          decoration: const InputDecoration(labelText: 'Payment Method', border: OutlineInputBorder(), isDense: true),
+                          items: const [
+                            DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                            DropdownMenuItem(value: 'Card', child: Text('Card')),
+                            DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                          ],
+                          onChanged: (val) => setDialogState(() => paymentMethod = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: amountCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Expense Amount (৳)', border: OutlineInputBorder(), isDense: true),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: staffCtrl,
+                          decoration: const InputDecoration(labelText: 'Staff Name', border: OutlineInputBorder(), isDense: true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          controller: voucherCtrl,
+                          decoration: const InputDecoration(labelText: 'Voucher No (Optional)', border: OutlineInputBorder(), isDense: true),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: noteCtrl,
+                    decoration: const InputDecoration(labelText: 'Notes / Reference', border: OutlineInputBorder(), isDense: true),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+              onPressed: () {
+                final amt = double.tryParse(amountCtrl.text.trim());
+                if (amt != null && amt > 0) {
+                  final idStr = expenseItem?['_id'] ?? expenseItem?['id'] ?? 'exp_${DateTime.now().millisecondsSinceEpoch}';
+                  final newExpense = {
+                    '_id': idStr,
+                    'id': idStr,
+                    'headId': selectedHeadId ?? '',
+                    'headName': headName,
+                    'groupId': groupId,
+                    'groupName': groupName,
+                    'expenseType': expenseType,
+                    'amount': amt,
+                    'paymentMethod': paymentMethod,
+                    'date': expenseItem?['date'] ?? DateTime.now().toIso8601String(),
+                    'staffName': staffCtrl.text.trim().isNotEmpty ? staffCtrl.text.trim() : 'Staff',
+                    'voucherNo': voucherCtrl.text.trim(),
+                    'note': noteCtrl.text.trim(),
+                    'restId': widget.restId,
+                    'createdAt': expenseItem?['createdAt'] ?? DateTime.now().toIso8601String(),
+                  };
+
+                  final list = _getExpenseItems();
+                  setState(() {
+                    if (index != null && index >= 0 && index < list.length) {
+                      list[index] = newExpense;
+                    } else {
+                      list.insert(0, newExpense);
+                    }
+                    _saveExpenseItems(list);
+                  });
+                  _persistChanges();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save Expense Entry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddEditExpenseGroupDialog({Map<String, dynamic>? group, int? index}) {
+    final nameCtrl = TextEditingController(text: group?['name'] ?? '');
+    final descCtrl = TextEditingController(text: group?['description'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(group != null ? 'Edit Expense Group' : 'Add Expense Group'),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Group Name (e.g. Utility Bills)', border: OutlineInputBorder(), isDense: true),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder(), isDense: true),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+            onPressed: () {
+              if (nameCtrl.text.trim().isNotEmpty) {
+                final idStr = group?['_id'] ?? group?['id'] ?? 'grp_${DateTime.now().millisecondsSinceEpoch}';
+                final newGrp = {
+                  '_id': idStr,
+                  'id': idStr,
+                  'name': nameCtrl.text.trim(),
+                  'description': descCtrl.text.trim(),
+                  'restId': widget.restId,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                };
+
+                final list = _getExpenseGroups();
+                setState(() {
+                  if (index != null && index >= 0 && index < list.length) {
+                    list[index] = newGrp;
+                  } else {
+                    list.add(newGrp);
+                  }
+                  _saveExpenseGroups(list);
+                });
+                _persistChanges();
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save Group'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddEditExpenseHeadDialog({Map<String, dynamic>? head, int? index}) {
+    final groups = _getExpenseGroups();
+    final nameCtrl = TextEditingController(text: head?['name'] ?? '');
+    String? selectedGroupId = head?['groupId'];
+
+    if (selectedGroupId == null && groups.isNotEmpty) {
+      selectedGroupId = groups.first['_id'] ?? groups.first['id'];
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(head != null ? 'Edit Expense Head' : 'Add Expense Head'),
+          content: SizedBox(
+            width: 380,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Head Name (e.g. Electricity Bill)', border: OutlineInputBorder(), isDense: true),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: groups.any((g) => (g['_id'] ?? g['id']) == selectedGroupId) ? selectedGroupId : null,
+                  decoration: const InputDecoration(labelText: 'Belongs to Expense Group', border: OutlineInputBorder(), isDense: true),
+                  items: groups.map((g) {
+                    final id = (g['_id'] ?? g['id']).toString();
+                    return DropdownMenuItem(value: id, child: Text(g['name'] ?? 'Group'));
+                  }).toList(),
+                  onChanged: (val) => setDialogState(() => selectedGroupId = val),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+              onPressed: () {
+                if (nameCtrl.text.trim().isNotEmpty && selectedGroupId != null) {
+                  final idStr = head?['_id'] ?? head?['id'] ?? 'head_${DateTime.now().millisecondsSinceEpoch}';
+                  final matchedGrp = groups.firstWhere((g) => (g['_id'] ?? g['id']).toString() == selectedGroupId, orElse: () => {});
+                  final newHead = {
+                    '_id': idStr,
+                    'id': idStr,
+                    'name': nameCtrl.text.trim(),
+                    'groupId': selectedGroupId,
+                    'groupName': matchedGrp['name'] ?? '',
+                    'restId': widget.restId,
+                    'updatedAt': DateTime.now().toIso8601String(),
+                  };
+
+                  final list = _getExpenseHeads();
+                  setState(() {
+                    if (index != null && index >= 0 && index < list.length) {
+                      list[index] = newHead;
+                    } else {
+                      list.add(newHead);
+                    }
+                    _saveExpenseHeads(list);
+                  });
+                  _persistChanges();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save Head'),
             ),
           ],
         ),

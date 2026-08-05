@@ -97,6 +97,71 @@ class SupabaseService {
               settings['areas'] = obj['areaData'];
               settings['areaData'] = obj['areaData'];
             }
+            if (obj.containsKey('staffData') && obj['staffData'] is List) {
+              settings['staff'] = obj['staffData'];
+              settings['staffData'] = obj['staffData'];
+            }
+            if (obj.containsKey('promotionData') && obj['promotionData'] is List) {
+              settings['promotions'] = obj['promotionData'];
+              settings['promotionData'] = obj['promotionData'];
+            }
+            if (obj.containsKey('tillData') && obj['tillData'] is List) {
+              settings['tills'] = obj['tillData'];
+              settings['tillData'] = obj['tillData'];
+            }
+            if (obj.containsKey('kitchenData') && obj['kitchenData'] is List) {
+              settings['kitchens'] = obj['kitchenData'];
+              settings['kitchenData'] = obj['kitchenData'];
+            }
+            if (obj.containsKey('barData') && obj['barData'] is List) {
+              settings['bars'] = obj['barData'];
+              settings['barData'] = obj['barData'];
+            }
+            if (obj.containsKey('paymentMethodSettingData') && obj['paymentMethodSettingData'] is List) {
+              settings['paymentMethods'] = obj['paymentMethodSettingData'];
+              settings['paymentMethodSettingData'] = obj['paymentMethodSettingData'];
+            }
+            if (obj.containsKey('customerData') && obj['customer_data_table'] == 'customerTable') {
+              settings['customers'] = obj['customerData'];
+              settings['customerData'] = obj['customerData'];
+            } else if (obj.containsKey('customerData') && obj['print_copy_data_table'] == 'printCopyTable') {
+              settings['printCopyData'] = obj['customerData'];
+            }
+            if (obj.containsKey('basicSettingData')) {
+              settings['basicSettingData'] = obj['basicSettingData'];
+              settings['basicSettings'] = obj['basicSettingData'];
+            }
+            if (obj.containsKey('kukdData')) {
+              settings['kukdData'] = obj['kukdData'];
+            }
+            if (obj.containsKey('expenseGroupData') && obj['expenseGroupData'] is List) {
+              settings['expenseGroups'] = obj['expenseGroupData'];
+              settings['expenseGroupData'] = obj['expenseGroupData'];
+            }
+            if (obj.containsKey('expenseHeadData') && obj['expenseHeadData'] is List) {
+              settings['expenseHeads'] = obj['expenseHeadData'];
+              settings['expenseHeadData'] = obj['expenseHeadData'];
+            }
+            if (obj.containsKey('expenseItemData') && obj['expenseItemData'] is List) {
+              settings['expenseItems'] = obj['expenseItemData'];
+              settings['expenseItemData'] = obj['expenseItemData'];
+            }
+            if (obj.containsKey('stockData') && obj['stockData'] is List) {
+              settings['stocks'] = obj['stockData'];
+              settings['stockData'] = obj['stockData'];
+            }
+            if (obj.containsKey('stockLogData') && obj['stockLogData'] is List) {
+              settings['stockLogs'] = obj['stockLogData'];
+              settings['stockLogData'] = obj['stockLogData'];
+            }
+            if (obj.containsKey('ingredientData') && obj['ingredientData'] is List) {
+              settings['ingredients'] = obj['ingredientData'];
+              settings['ingredientData'] = obj['ingredientData'];
+            }
+            if (obj.containsKey('recipeData') && obj['recipeData'] is List) {
+              settings['recipes'] = obj['recipeData'];
+              settings['recipeData'] = obj['recipeData'];
+            }
           }
         }
       }
@@ -148,6 +213,34 @@ class SupabaseService {
             break;
           }
         }
+      }
+
+      if (!settings.containsKey('staff') && settings['staffData'] is List) {
+        settings['staff'] = settings['staffData'];
+      }
+      if (!settings.containsKey('customers') && settings['customerData'] is List) {
+        settings['customers'] = settings['customerData'];
+      }
+      if (!settings.containsKey('expenseGroups') && settings['expenseGroupData'] is List) {
+        settings['expenseGroups'] = settings['expenseGroupData'];
+      }
+      if (!settings.containsKey('expenseHeads') && settings['expenseHeadData'] is List) {
+        settings['expenseHeads'] = settings['expenseHeadData'];
+      }
+      if (!settings.containsKey('expenseItems') && settings['expenseItemData'] is List) {
+        settings['expenseItems'] = settings['expenseItemData'];
+      }
+      if (!settings.containsKey('stocks') && settings['stockData'] is List) {
+        settings['stocks'] = settings['stockData'];
+      }
+      if (!settings.containsKey('stockLogs') && settings['stockLogData'] is List) {
+        settings['stockLogs'] = settings['stockLogData'];
+      }
+      if (!settings.containsKey('ingredients') && settings['ingredientData'] is List) {
+        settings['ingredients'] = settings['ingredientData'];
+      }
+      if (!settings.containsKey('recipes') && settings['recipeData'] is List) {
+        settings['recipes'] = settings['recipeData'];
       }
 
       return settings;

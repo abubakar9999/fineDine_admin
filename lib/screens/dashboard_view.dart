@@ -16,7 +16,10 @@ class DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final String currencySymbol = (settingsData['basicSettingData'] is List && (settingsData['basicSettingData'] as List).isNotEmpty)
+        ? (settingsData['basicSettingData'].first['currSym'] ?? '৳')
+        : (settingsData['currSym'] ?? '৳');
+    final currencyFormatter = NumberFormat.currency(symbol: currencySymbol, decimalDigits: 2);
 
     double totalRevenue = 0.0;
     int totalGuests = 0;

@@ -25,7 +25,7 @@ class _OrderReportsViewState extends State<OrderReportsView> {
   String _selectedOrderType = 'All';
   String _selectedDateFilter = 'All Time';
 
-  final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+  final currencyFormatter = NumberFormat.currency(symbol: '৳', decimalDigits: 2);
   final dateFormatter = DateFormat('MMM dd, yyyy • hh:mm a');
   final shortDateFormatter = DateFormat('MMM dd, yyyy');
 
@@ -77,8 +77,8 @@ class _OrderReportsViewState extends State<OrderReportsView> {
         TextCellValue('Total Orders'),
         TextCellValue('Dine-In'),
         TextCellValue('Takeaway'),
-        TextCellValue('Total Sales (\$)'),
-        TextCellValue('Avg Ticket (\$)'),
+        TextCellValue('Total Sales (৳)'),
+        TextCellValue('Avg Ticket (৳)'),
       ]);
 
       Map<String, List<OrderModel>> staffGroup = {};
@@ -107,7 +107,7 @@ class _OrderReportsViewState extends State<OrderReportsView> {
         TextCellValue('Date'),
         TextCellValue('Staff'),
         TextCellValue('Customer'),
-        TextCellValue('Amount (\$)'),
+        TextCellValue('Amount (৳)'),
         TextCellValue('Cancellation Reason'),
       ]);
       final cancelledList = _filteredOrders.where((o) => o.isCancelled).toList();
@@ -127,8 +127,8 @@ class _OrderReportsViewState extends State<OrderReportsView> {
       refundSheet.appendRow([
         TextCellValue('Order #'),
         TextCellValue('Date'),
-        TextCellValue('Original Amount (\$)'),
-        TextCellValue('Refund Amount (\$)'),
+        TextCellValue('Original Amount (৳)'),
+        TextCellValue('Refund Amount (৳)'),
         TextCellValue('Refund Reason'),
       ]);
       final refundedList = _filteredOrders.where((o) => o.isRefunded).toList();
@@ -153,7 +153,7 @@ class _OrderReportsViewState extends State<OrderReportsView> {
       double overhead = netSales * 0.18; // Estimated operating overhead
       double netProfit = grossProfit - refundLosses - overhead;
 
-      plSheet.appendRow([TextCellValue('Financial Metric'), TextCellValue('Amount (\$)')]);
+      plSheet.appendRow([TextCellValue('Financial Metric'), TextCellValue('Amount (৳)')]);
       plSheet.appendRow([TextCellValue('Gross Sales Revenue'), DoubleCellValue(grossSales)]);
       plSheet.appendRow([TextCellValue('Total Discounts Allowed'), DoubleCellValue(discounts)]);
       plSheet.appendRow([TextCellValue('Net Sales Revenue'), DoubleCellValue(netSales)]);
@@ -576,7 +576,7 @@ class _OrderReportsViewState extends State<OrderReportsView> {
                 _buildKpiCard(
                   'Top Waiter',
                   topStaffName,
-                  staffStats.isNotEmpty ? currencyFormatter.format(staffStats.first['totalSales']) : '\$0.00',
+                  staffStats.isNotEmpty ? currencyFormatter.format(staffStats.first['totalSales']) : '৳0.00',
                   Icons.workspace_premium_rounded,
                   const [Color(0xFF10B981), Color(0xFF059669)],
                 ),
@@ -589,7 +589,7 @@ class _OrderReportsViewState extends State<OrderReportsView> {
                 ),
                 _buildKpiCard(
                   'Avg / Waiter',
-                  staffStats.isEmpty ? '\$0.00' : currencyFormatter.format(totalStoreRevenue / staffStats.length),
+                  staffStats.isEmpty ? '৳0.00' : currencyFormatter.format(totalStoreRevenue / staffStats.length),
                   'Workload sales average',
                   Icons.analytics_rounded,
                   const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
