@@ -128,6 +128,8 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -141,8 +143,11 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
               ),
               child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 20),
             ),
-            const SizedBox(width: 10),
-            const Text('Super Admin Console', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Colors.white)),
+            const SizedBox(width: 8),
+            Text(
+              isMobile ? 'Super Admin' : 'Super Admin Console',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: isMobile ? 16 : 18, color: Colors.white),
+            ),
           ],
         ),
         backgroundColor: const Color(0xFF1E1B4B),
@@ -153,10 +158,10 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
           unselectedLabelColor: const Color(0xFF94A3B8),
           indicatorColor: const Color(0xFF10B981),
           indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
-            Tab(icon: Icon(Icons.apartment_rounded, size: 20), text: 'Companies'),
-            Tab(icon: Icon(Icons.storefront_rounded, size: 20), text: 'Restaurants'),
+            Tab(icon: Icon(Icons.apartment_rounded, size: 18), text: 'Companies'),
+            Tab(icon: Icon(Icons.storefront_rounded, size: 18), text: 'Restaurants'),
           ],
         ),
       ),
@@ -167,21 +172,27 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
               children: [
                 // Companies List Tab
                 Padding(
-                  padding: const EdgeInsets.all(28.0),
+                  padding: EdgeInsets.all(isMobile ? 16.0 : 28.0),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('All Companies (${_companies.length})', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                          Text(
+                            'All Companies (${_companies.length})',
+                            style: TextStyle(fontSize: isMobile ? 17 : 20, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A)),
+                          ),
                           ElevatedButton.icon(
                             onPressed: _showCreateCompanyDialog,
                             icon: const Icon(Icons.add_rounded, size: 18),
-                            label: const Text('Create Company'),
+                            label: Text(isMobile ? 'Add' : 'Create Company'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF4F46E5),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isMobile ? 12 : 18,
+                                vertical: isMobile ? 10 : 14,
+                              ),
                             ),
                           ),
                         ],
@@ -239,13 +250,16 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
                 ),
                 // Restaurants List Tab
                 Padding(
-                  padding: const EdgeInsets.all(28.0),
+                  padding: EdgeInsets.all(isMobile ? 16.0 : 28.0),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('All Restaurants (${_restaurants.length})', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                          Text(
+                            'All Restaurants (${_restaurants.length})',
+                            style: TextStyle(fontSize: isMobile ? 17 : 20, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A)),
+                          ),
                           ElevatedButton.icon(
                             onPressed: () async {
                               final res = await Navigator.push(

@@ -289,47 +289,87 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final mediaWidth = MediaQuery.of(context).size.width;
+    final isMobile = mediaWidth < 600;
+
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: EdgeInsets.all(isMobile ? 14.0 : 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Settings & Menu Management',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          if (isMobile) ...[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Settings & Menu',
+                        style: TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.indigo.shade900,
                         ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Manage Food Items, Categories, Cuisines, Tags, Portions, Tables & Areas',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  if (_isSaving) ...[
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    const Text('Saving...', style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
+                    if (_isSaving) ...[
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2.0),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text('Saving...', style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, fontSize: 12)),
+                    ],
                   ],
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Manage Items, Categories, Tables, Staff & Offers',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Settings & Menu Management',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.indigo.shade900,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Manage Food Items, Categories, Cuisines, Tags, Portions, Tables & Areas',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    if (_isSaving) ...[
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Saving...', style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ],
+          SizedBox(height: isMobile ? 10 : 16),
           TabBar(
             controller: _tabController,
             labelColor: Colors.indigo,
@@ -337,6 +377,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             indicatorColor: Colors.indigo,
             indicatorWeight: 3,
             isScrollable: true,
+            tabAlignment: TabAlignment.start,
             tabs: const [
               Tab(icon: Icon(Icons.restaurant_menu), text: 'Food Items'),
               Tab(icon: Icon(Icons.category), text: 'Categories, Cuisines & Tags'),
@@ -345,7 +386,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               Tab(icon: Icon(Icons.local_offer), text: 'Promotions & Offers'),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 10 : 16),
           Expanded(
             child: TabBarView(
               controller: _tabController,

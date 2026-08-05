@@ -124,121 +124,134 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaWidth = MediaQuery.of(context).size.width;
+    final isMobile = mediaWidth < 700;
+    final isVerySmall = mediaWidth < 450;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        titleSpacing: 20,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'FineDine Admin',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: Color(0xFF0F172A)),
-            ),
-            const SizedBox(width: 16),
-            // Show Dropdown ONLY if company has multiple restaurants (> 1)
-            if (_companyRestaurants.length > 1) ...[
+        titleSpacing: isMobile ? 12 : 20,
+        title: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                  ),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFC7D2FE)),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _companyRestaurants.any((r) => r['id']?.toString() == _currentRestId)
-                        ? _currentRestId
-                        : _companyRestaurants.first['id']?.toString(),
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF4F46E5)),
-                    style: const TextStyle(
-                      color: Color(0xFF4F46E5),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isVerySmall ? 'FineDine' : 'FineDine Admin',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
+              ),
+              const SizedBox(width: 10),
+              // Show Dropdown ONLY if company has multiple restaurants (> 1)
+              if (_companyRestaurants.length > 1) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFC7D2FE)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isDense: true,
+                      value: _companyRestaurants.any((r) => r['id']?.toString() == _currentRestId)
+                          ? _currentRestId
+                          : _companyRestaurants.first['id']?.toString(),
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF4F46E5), size: 18),
+                      style: const TextStyle(
+                        color: Color(0xFF4F46E5),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                      onChanged: (String? newRestId) {
+                        if (newRestId != null && newRestId != _currentRestId) {
+                          setState(() {
+                            _currentRestId = newRestId;
+                          });
+                          _loadBackupData();
+                        }
+                      },
+                      items: _companyRestaurants.map((r) {
+                        final id = r['id']?.toString() ?? '';
+                        final name = r['name'] ?? 'Restaurant #$id';
+                        return DropdownMenuItem<String>(
+                          value: id,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.storefront_rounded, size: 14, color: Color(0xFF4F46E5)),
+                              const SizedBox(width: 6),
+                              Text(isVerySmall ? '#$id' : '$name (ID: #$id)'),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    onChanged: (String? newRestId) {
-                      if (newRestId != null && newRestId != _currentRestId) {
-                        setState(() {
-                          _currentRestId = newRestId;
-                        });
-                        _loadBackupData();
-                      }
-                    },
-                    items: _companyRestaurants.map((r) {
-                      final id = r['id']?.toString() ?? '';
-                      final name = r['name'] ?? 'Restaurant #$id';
-                      return DropdownMenuItem<String>(
-                        value: id,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.storefront_rounded, size: 16, color: Color(0xFF4F46E5)),
-                            const SizedBox(width: 8),
-                            Text('$name (ID: #$id)'),
-                          ],
-                        ),
-                      );
-                    }).toList(),
                   ),
                 ),
-              ),
-            ] else ...[
-              // Simple outlet tag
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFC7D2FE)),
+              ] else ...[
+                // Simple outlet tag
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFC7D2FE)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.storefront_rounded, size: 12, color: Color(0xFF4F46E5)),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Outlet #$_currentRestId',
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF4F46E5), fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.storefront_rounded, size: 14, color: Color(0xFF4F46E5)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Outlet #$_currentRestId',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF4F46E5), fontWeight: FontWeight.bold),
-                    ),
-                  ],
+              ],
+              if (!isVerySmall) ...[
+                const SizedBox(width: 10),
+                // Live Syncing Chip
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      CircleAvatar(radius: 3.5, backgroundColor: Color(0xFF10B981)),
+                      SizedBox(width: 4),
+                      Text(
+                        'Live Sync',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
-            const Spacer(),
-            // Live Syncing Chip
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFECFDF5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFA7F3D0)),
-              ),
-              child: Row(
-                children: const [
-                  CircleAvatar(radius: 4, backgroundColor: Color(0xFF10B981)),
-                  SizedBox(width: 6),
-                  Text(
-                    'Live Supabase Sync',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B)),
-            tooltip: 'Sign Out Company Portal',
+            icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B), size: 20),
+            tooltip: 'Sign Out',
             onPressed: () {
               Navigator.pushReplacement(
                 context,
@@ -246,51 +259,82 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
               );
             },
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isMobile ? 4 : 12),
         ],
       ),
+      bottomNavigationBar: isMobile
+          ? NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (int index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              backgroundColor: Colors.white,
+              indicatorColor: const Color(0xFFEEF2FF),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard_rounded, color: Color(0xFF4F46E5)),
+                  label: 'Dashboard',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.receipt_long_outlined),
+                  selectedIcon: Icon(Icons.receipt_long_rounded, color: Color(0xFF4F46E5)),
+                  label: 'Reports',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.settings_outlined),
+                  selectedIcon: Icon(Icons.settings_rounded, color: Color(0xFF4F46E5)),
+                  label: 'Settings',
+                ),
+              ],
+            )
+          : null,
       body: Row(
         children: [
-          // Sidebar / Navigation Rail
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (int index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            labelType: NavigationRailLabelType.all,
-            leading: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20.0),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFC7D2FE)),
+          // Sidebar / Navigation Rail (Desktop / Tablet)
+          if (!isMobile) ...[
+            NavigationRail(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (int index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              labelType: NavigationRailLabelType.all,
+              leading: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFC7D2FE)),
+                  ),
+                  child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF4F46E5), size: 22),
                 ),
-                child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF4F46E5), size: 22),
               ),
+              destinations: const [
+                NavigationRailDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard_rounded),
+                  label: Text('Dashboard'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.receipt_long_outlined),
+                  selectedIcon: Icon(Icons.receipt_long_rounded),
+                  label: Text('Reports'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.settings_outlined),
+                  selectedIcon: Icon(Icons.settings_rounded),
+                  label: Text('Settings'),
+                ),
+              ],
             ),
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard_rounded),
-                label: Text('Dashboard'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.receipt_long_outlined),
-                selectedIcon: Icon(Icons.receipt_long_rounded),
-                label: Text('Reports'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings_rounded),
-                label: Text('Settings'),
-              ),
-            ],
-          ),
-          const VerticalDivider(thickness: 1, width: 1, color: Color(0xFFE2E8F0)),
+            const VerticalDivider(thickness: 1, width: 1, color: Color(0xFFE2E8F0)),
+          ],
           // Main Body Content
           Expanded(
             child: _isLoading

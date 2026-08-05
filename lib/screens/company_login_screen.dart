@@ -178,22 +178,29 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
               ),
             ),
             Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 440),
-                  child: Card(
-                    elevation: 12,
-                    shadowColor: Colors.black.withValues(alpha: 0.25),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+              child: Builder(
+                builder: (context) {
+                  final isMobile = MediaQuery.of(context).size.width < 500;
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 12.0 : 24.0,
+                      vertical: 24.0,
                     ),
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.all(36.0),
-                      child: Form(
-                        key: _formKey,
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Card(
+                        elevation: 12,
+                        shadowColor: Colors.black.withValues(alpha: 0.25),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
+                        ),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: EdgeInsets.all(isMobile ? 20.0 : 36.0),
+                          child: Form(
+                            key: _formKey,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -362,8 +369,6 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _login,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                   ),
                                   child: _isLoading
@@ -390,11 +395,13 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
                               ),
                             ),
                           ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ],
@@ -403,4 +410,3 @@ class _CompanyLoginScreenState extends State<CompanyLoginScreen> {
     );
   }
 }
-

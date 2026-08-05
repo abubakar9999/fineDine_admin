@@ -1,4 +1,5 @@
-import 'package:supabase/supabase.dart';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   final supabase = SupabaseClient(
@@ -22,8 +23,8 @@ void main() async {
       'updated_at': DateTime.now().toIso8601String(),
     }).select();
     
-    print('Success: $response');
+    debugPrint('Success: $response');
   } catch (e) {
-    print('Error caught: $e');
+    debugPrint('Error caught: $e');
   }
 }

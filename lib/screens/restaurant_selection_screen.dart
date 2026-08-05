@@ -102,13 +102,15 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: const Color(0xFFEEF2FF),
                 borderRadius: BorderRadius.circular(8),
@@ -116,13 +118,16 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
               ),
               child: Text(
                 widget.companyName,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF4F46E5)),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF4F46E5)),
               ),
             ),
-            const SizedBox(width: 10),
-            const Text(
-              'Outlet Selection Portal',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF0F172A)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                isMobile ? 'Outlets' : 'Outlet Selection Portal',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18, color: const Color(0xFF0F172A)),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -137,7 +142,7 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
               );
             },
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading
@@ -145,35 +150,30 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
               child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
             )
           : Padding(
-              padding: const EdgeInsets.all(28.0),
+              padding: EdgeInsets.all(isMobile ? 16.0 : 28.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Select Restaurant Branch',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Company ID: ${widget.companyId} • Found ${_restaurants.length} active outlet(s)',
-                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
-                          ),
-                        ],
+                      Text(
+                        'Select Restaurant Branch',
+                        style: TextStyle(
+                          fontSize: isMobile ? 20 : 24,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Company ID: ${widget.companyId} • Found ${_restaurants.length} outlet(s)',
+                        style: TextStyle(color: const Color(0xFF64748B), fontSize: isMobile ? 13 : 14),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 28),
+                  SizedBox(height: isMobile ? 16 : 28),
                   Expanded(
                     child: _restaurants.isEmpty
                         ? Center(

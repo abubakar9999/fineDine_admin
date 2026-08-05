@@ -47,61 +47,102 @@ class DashboardView extends StatelessWidget {
     final topItems = itemSalesCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return RefreshIndicator(
       color: const Color(0xFF4F46E5),
       onRefresh: () async => onRefresh(),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(28.0),
+        padding: EdgeInsets.all(isMobile ? 16.0 : 28.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Executive Overview',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                        letterSpacing: -0.5,
+            // Responsive Header
+            if (isMobile) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Executive Overview',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Real-time metrics, order breakdown & top menu sales',
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: onRefresh,
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: const Text('Refresh Data'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Real-time store metrics, order breakdown & top menu sales',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: onRefresh,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Refresh Data'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
+                ],
+              ),
+            ] else ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Executive Overview',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Real-time store metrics, order breakdown & top menu sales',
+                        style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: onRefresh,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Refresh Data'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            SizedBox(height: isMobile ? 20 : 28),
 
             // Key Metrics Cards Grid
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 900;
-                final crossAxisCount = isWide ? 4 : (constraints.maxWidth > 550 ? 2 : 1);
+                final isMedium = constraints.maxWidth > 550;
+                final crossAxisCount = isWide ? 4 : (isMedium ? 2 : 1);
+                final childAspectRatio = isWide ? 1.45 : (isMedium ? 1.55 : 2.1);
+
                 return GridView.count(
                   crossAxisCount: crossAxisCount,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 18,
-                  mainAxisSpacing: 18,
-                  childAspectRatio: isWide ? 1.45 : 1.35,
+                  crossAxisSpacing: isMobile ? 10 : 18,
+                  mainAxisSpacing: isMobile ? 10 : 18,
+                  childAspectRatio: childAspectRatio,
                   children: [
                     _buildMetricCard(
                       context,
@@ -143,7 +184,7 @@ class DashboardView extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: isMobile ? 20 : 32),
 
             // Top Selling Items & Performance Section
             Row(
@@ -164,14 +205,18 @@ class DashboardView extends StatelessWidget {
                       ],
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 12,
+                            runSpacing: 10,
                             children: [
                               Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(8),
@@ -182,12 +227,12 @@ class DashboardView extends StatelessWidget {
                                     child: const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 20),
                                   ),
                                   const SizedBox(width: 12),
-                                  const Text(
+                                  Text(
                                     'Top Performing Menu Items',
                                     style: TextStyle(
-                                      fontSize: 18,
+                                      fontSize: isMobile ? 16 : 18,
                                       fontWeight: FontWeight.w800,
-                                      color: Color(0xFF0F172A),
+                                      color: const Color(0xFF0F172A),
                                     ),
                                   ),
                                 ],
