@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:excel/excel.dart' as xl;
 
 class SettingsView extends StatefulWidget {
   final Map<String, dynamic> settingsData;
@@ -417,6 +421,28 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               ),
             ),
             const SizedBox(width: 12),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.teal.shade700,
+                side: BorderSide(color: Colors.teal.shade300),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              ),
+              onPressed: _downloadExcelTemplate,
+              icon: const Icon(Icons.download, size: 18),
+              label: const Text('Template'),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade700,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              onPressed: _importFoodItemsFromExcel,
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Import Excel'),
+            ),
+            const SizedBox(width: 8),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,
@@ -896,6 +922,554 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // --- EXCEL IMPORT FOR FOOD ITEMS ---
+  // ==========================================
+
+  void _downloadExcelTemplate() {
+    try {
+      // Create CSV content which is 100% compatible with Excel, Google Sheets, and Web browsers
+      const csvHeader = 'name,shortName,description,portionName,price,category,cuisine,tag\n';
+      const sampleRows = 
+        'Chicken Biryani,CB01,Fragrant rice dish,Regular,12.99,Main Course,Indian,halal\n'
+        'Mango Lassi,ML01,Sweet yogurt drink,Standard,4.50,Drinks,Indian,\n'
+        'Garlic Naan,GN01,Fresh baked bread,Regular,3.00,Bread,Indian,vegetarian\n';
+
+      final String csvContent = csvHeader + sampleRows;
+      final bytes = Uint8List.fromList(utf8.encode(csvContent));
+
+      _downloadViaAnchor(bytes, 'food_items_template.csv', 'text/csv');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create template: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  void _downloadViaAnchor(Uint8List bytes, String fileName, String mimeType) {
+    try {
+      FilePicker.platform.saveFile(
+        dialogTitle: 'Save Import Template',
+        fileName: fileName,
+        bytes: bytes,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  List<List<String>> _parseCsv(String content) {
+    final List<List<String>> rows = [];
+    List<String> currentRow = [];
+    final StringBuffer currentCell = StringBuffer();
+    bool inQuotes = false;
+
+    // Standardize newlines
+    final cleanContent = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+
+    for (int i = 0; i < cleanContent.length; i++) {
+      final char = cleanContent[i];
+
+      if (char == '"') {
+        if (inQuotes && i + 1 < cleanContent.length && cleanContent[i + 1] == '"') {
+          currentCell.write('"');
+          i++; // Skip escaped quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char == ',' && !inQuotes) {
+        currentRow.add(currentCell.toString().trim());
+        currentCell.clear();
+      } else if (char == '\n' && !inQuotes) {
+        currentRow.add(currentCell.toString().trim());
+        currentCell.clear();
+        if (currentRow.any((cell) => cell.isNotEmpty)) {
+          rows.add(List.from(currentRow));
+        }
+        currentRow.clear();
+      } else {
+        currentCell.write(char);
+      }
+    }
+
+    if (currentCell.isNotEmpty || currentRow.isNotEmpty) {
+      currentRow.add(currentCell.toString().trim());
+      if (currentRow.any((cell) => cell.isNotEmpty)) {
+        rows.add(currentRow);
+      }
+    }
+
+    return rows;
+  }
+
+  Future<void> _importFoodItemsFromExcel() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'csv'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      if (file.bytes == null || file.bytes!.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not read file data'), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
+
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                SizedBox(width: 12),
+                Text('Parsing file...'),
+              ],
+            ),
+            backgroundColor: Colors.indigo,
+            duration: Duration(seconds: 10),
+          ),
+        );
+      }
+
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      final isCsv = file.name.toLowerCase().endsWith('.csv');
+      List<List<String>> rows = [];
+
+      if (isCsv) {
+        final content = utf8.decode(file.bytes!);
+        rows = _parseCsv(content);
+      } else {
+        // XLSX handling
+        final List<int> bytesList = List<int>.from(file.bytes!);
+        try {
+          final excel = xl.Excel.decodeBytes(bytesList);
+          if (excel.tables.isNotEmpty) {
+            final sheetName = excel.tables.keys.first;
+            final sheet = excel.tables[sheetName];
+            if (sheet != null && sheet.rows.isNotEmpty) {
+              for (var row in sheet.rows) {
+                final rowValues = row.map((cell) => cell?.value?.toString().trim() ?? '').toList();
+                rows.add(rowValues);
+              }
+            }
+          }
+        } catch (e) {
+          // If XLSX decode fails, attempt CSV fallback in case user renamed .csv to .xlsx
+          try {
+            final content = utf8.decode(file.bytes!);
+            rows = _parseCsv(content);
+          } catch (_) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to read Excel file format. Please upload a .csv file or valid .xlsx template.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            }
+            return;
+          }
+        }
+      }
+
+      // Hide loading snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+
+      if (rows.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Uploaded file is empty'), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
+
+      // Parse header row
+      final headerRow = rows.first;
+      final Map<String, int> columnMap = {};
+      for (int i = 0; i < headerRow.length; i++) {
+        final cellValue = headerRow[i].trim().toLowerCase();
+        if (cellValue.isNotEmpty) {
+          columnMap[cellValue] = i;
+        }
+      }
+
+      // Resolve column indices with flexible header names
+      int? nameCol = columnMap['name'];
+      int? shortNameCol = columnMap['shortname'] ?? columnMap['short_name'] ?? columnMap['code'];
+      int? descCol = columnMap['description'] ?? columnMap['desc'];
+      int? portionNameCol = columnMap['portionname'] ?? columnMap['portion_name'] ?? columnMap['portion'];
+      int? priceCol = columnMap['price'] ?? columnMap['portionprice'] ?? columnMap['portion_price'];
+      int? categoryCol = columnMap['category'] ?? columnMap['categories'];
+      int? cuisineCol = columnMap['cuisine'] ?? columnMap['cuisines'];
+      int? tagCol = columnMap['tag'] ?? columnMap['tags'];
+
+      if (nameCol == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('File must have a "name" column header in the first row'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Parse data rows
+      final categories = _getCategories();
+      final cuisines = _getCuisines();
+      final tags = _getTags();
+
+      final List<Map<String, dynamic>> parsedItems = [];
+      final List<String> warnings = [];
+
+      for (int rowIdx = 1; rowIdx < rows.length; rowIdx++) {
+        final row = rows[rowIdx];
+
+        String getCellStr(int? colIdx) {
+          if (colIdx == null || colIdx >= row.length) return '';
+          return row[colIdx].trim();
+        }
+
+        final name = getCellStr(nameCol);
+        if (name.isEmpty) {
+          warnings.add('Row ${rowIdx + 1}: Skipped (empty name)');
+          continue;
+        }
+
+        final shortName = getCellStr(shortNameCol);
+        final description = getCellStr(descCol);
+        final portionName = getCellStr(portionNameCol).isNotEmpty ? getCellStr(portionNameCol) : 'Standard';
+        final priceStr = getCellStr(priceCol);
+        final price = double.tryParse(priceStr) ?? 0.0;
+        final categoryName = getCellStr(categoryCol);
+        final cuisineName = getCellStr(cuisineCol);
+        final tagName = getCellStr(tagCol);
+
+        // Match category
+        List<Map<String, dynamic>> matchedCategories = [];
+        if (categoryName.isNotEmpty) {
+          final match = categories.where((c) => (c['name'] ?? '').toString().toLowerCase() == categoryName.toLowerCase()).toList();
+          if (match.isNotEmpty) {
+            matchedCategories = match;
+          } else {
+            warnings.add('Row ${rowIdx + 1}: Category "$categoryName" not found (skipped tagging)');
+          }
+        }
+
+        // Match cuisine
+        List<Map<String, dynamic>> matchedCuisines = [];
+        if (cuisineName.isNotEmpty) {
+          final match = cuisines.where((c) => (c['name'] ?? '').toString().toLowerCase() == cuisineName.toLowerCase()).toList();
+          if (match.isNotEmpty) {
+            matchedCuisines = match;
+          } else {
+            warnings.add('Row ${rowIdx + 1}: Cuisine "$cuisineName" not found (skipped tagging)');
+          }
+        }
+
+        // Match tag
+        List<Map<String, dynamic>> matchedTags = [];
+        if (tagName.isNotEmpty) {
+          final match = tags.where((t) => (t['name'] ?? '').toString().toLowerCase() == tagName.toLowerCase()).toList();
+          if (match.isNotEmpty) {
+            matchedTags = match;
+          } else {
+            warnings.add('Row ${rowIdx + 1}: Tag "$tagName" not found (skipped tagging)');
+          }
+        }
+
+        final newItem = {
+          '_id': 'import_${DateTime.now().millisecondsSinceEpoch}_$rowIdx',
+          'name': name,
+          'shortName': shortName,
+          'description': description,
+          'restId': widget.restId,
+          'categories': matchedCategories,
+          'cuisines': matchedCuisines,
+          'tags': matchedTags,
+          'portions': [
+            {
+              '_id': 'p_${DateTime.now().millisecondsSinceEpoch}_$rowIdx',
+              'portionName': portionName,
+              'portionPriceDineIn': price,
+              'portionPriceCollection': price,
+              'portionPriceDelivery': price,
+              'portionPriceWaiting': price,
+              'portionPrice': price,
+            }
+          ],
+          'status': true,
+          'vatAble': false,
+          'foodTypeList': ['DineIn', 'Collection', 'Delivery', 'Waiting'],
+          'days': {'sat': true, 'sun': true, 'mon': true, 'tue': true, 'wed': true, 'thu': true, 'fri': true},
+          'makedByKitchen': [],
+          'makedByBar': [],
+          'relatedItems': [],
+          'options': [],
+          'extras': [],
+          'cookingTime': 0,
+          'startTime': DateTime.now().toIso8601String(),
+          'endTime': DateTime.now().toIso8601String(),
+          'createdAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
+          '__v': 0,
+        };
+
+        parsedItems.add(newItem);
+      }
+
+      if (parsedItems.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No valid food items found in the Excel file. ${warnings.isNotEmpty ? warnings.first : ''}'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Show preview dialog
+      if (mounted) {
+        _showImportPreviewDialog(parsedItems, warnings, file.name);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        String errorMsg = e.toString();
+        if (errorMsg.contains('LateInitialization')) {
+          errorMsg = 'File format error. Please use the "Template" button to download a valid .xlsx template, fill it in, and try again.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error importing Excel file: $errorMsg'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showImportPreviewDialog(List<Map<String, dynamic>> parsedItems, List<String> warnings, String fileName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.upload_file, color: Colors.green.shade700),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Import Preview', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    '$fileName — ${parsedItems.length} item${parsedItems.length == 1 ? '' : 's'} found',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.normal),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 700,
+          height: 450,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Warnings section
+              if (warnings.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade300),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, size: 18, color: Colors.amber.shade800),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${warnings.length} Warning${warnings.length == 1 ? '' : 's'}',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ...warnings.take(5).map((w) => Padding(
+                            padding: const EdgeInsets.only(left: 24, top: 2),
+                            child: Text(w, style: TextStyle(fontSize: 12, color: Colors.amber.shade900)),
+                          )),
+                      if (warnings.length > 5)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 24, top: 4),
+                          child: Text(
+                            '...and ${warnings.length - 5} more',
+                            style: TextStyle(fontSize: 12, color: Colors.amber.shade700, fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Summary chips
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  _importChip(Icons.fastfood, '${parsedItems.length} Items', Colors.indigo),
+                  _importChip(
+                    Icons.category,
+                    '${parsedItems.where((i) => (i['categories'] as List?)?.isNotEmpty == true).length} w/ Category',
+                    Colors.teal,
+                  ),
+                  _importChip(
+                    Icons.restaurant,
+                    '${parsedItems.where((i) => (i['cuisines'] as List?)?.isNotEmpty == true).length} w/ Cuisine',
+                    Colors.orange,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 4),
+
+              // Items data table
+              Expanded(
+                child: SingleChildScrollView(
+                  child: DataTable(
+                    headingRowColor: WidgetStateProperty.all(Colors.indigo.shade50),
+                    columnSpacing: 16,
+                    dataRowMinHeight: 36,
+                    dataRowMaxHeight: 52,
+                    columns: const [
+                      DataColumn(label: Text('#', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Code', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Portion', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Price', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                      DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                    rows: parsedItems.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final item = entry.value;
+                      final portions = item['portions'] as List? ?? [];
+                      final portionName = portions.isNotEmpty ? (portions[0]['portionName'] ?? 'Standard') : 'Standard';
+                      final price = portions.isNotEmpty ? (portions[0]['portionPriceDineIn'] ?? 0) : 0;
+                      final cats = item['categories'] as List? ?? [];
+                      final catName = cats.isNotEmpty ? (cats[0]['name'] ?? '') : '';
+
+                      return DataRow(cells: [
+                        DataCell(Text('${idx + 1}')),
+                        DataCell(Text(item['name'] ?? '', overflow: TextOverflow.ellipsis)),
+                        DataCell(Text(item['shortName'] ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 12))),
+                        DataCell(Text(portionName.toString())),
+                        DataCell(Text('\$${(price is num ? price : 0).toStringAsFixed(2)}')),
+                        DataCell(Text(catName.toString(), style: TextStyle(color: Colors.indigo.shade600, fontSize: 12))),
+                      ]);
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, foregroundColor: Colors.white),
+            onPressed: () {
+              final items = _getItems();
+              setState(() {
+                items.addAll(parsedItems);
+                _saveItems(items);
+              });
+              _persistChanges();
+              Navigator.pop(context);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text('Successfully imported ${parsedItems.length} food item${parsedItems.length == 1 ? '' : 's'}!'),
+                      ],
+                    ),
+                    backgroundColor: Colors.green.shade700,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.check),
+            label: Text('Import ${parsedItems.length} Item${parsedItems.length == 1 ? '' : 's'}'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _importChip(IconData icon, String label, MaterialColor color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color.shade700),
+          const SizedBox(width: 5),
+          Text(label, style: TextStyle(fontSize: 12, color: color.shade800, fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }

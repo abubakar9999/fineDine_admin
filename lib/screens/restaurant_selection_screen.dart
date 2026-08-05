@@ -103,13 +103,33 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text('${widget.companyName} - Outlets', style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF2FF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFC7D2FE)),
+              ),
+              child: Text(
+                widget.companyName,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF4F46E5)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Outlet Selection Portal',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF0F172A)),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout Company',
+            icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B)),
+            tooltip: 'Sign Out Company',
             onPressed: () {
               Navigator.pushReplacement(
                 context,
@@ -117,111 +137,222 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
               );
             },
           ),
+          const SizedBox(width: 12),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+            )
           : Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(28.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Select a Restaurant Branch',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.indigo.shade900,
-                        ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Select Restaurant Branch',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Company ID: ${widget.companyId} • Found ${_restaurants.length} active outlet(s)',
+                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Company ID: ${widget.companyId} • Found ${_restaurants.length} outlet(s)',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   Expanded(
                     child: _restaurants.isEmpty
-                        ? const Center(child: Text('No restaurant outlets found under this company.'))
+                        ? Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(32),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.storefront_outlined, size: 48, color: Color(0xFF94A3B8)),
+                                  SizedBox(height: 12),
+                                  Text(
+                                    'No Outlets Available',
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text('No active restaurant branches found for this company account.', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+                                ],
+                              ),
+                            ),
+                          )
                         : GridView.builder(
                             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 400,
-                              mainAxisExtent: 180,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
+                              maxCrossAxisExtent: 440,
+                              mainAxisExtent: 200,
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
                             ),
                             itemCount: _restaurants.length,
                             itemBuilder: (context, index) {
                               final r = _restaurants[index];
                               final String restId = r['id']?.toString() ?? '1001';
                               final String name = r['name'] ?? 'Restaurant #$restId';
-                              final String address = r['address'] ?? 'No address provided';
+                              final String address = r['address'] ?? 'No address listed';
+                              final String mobile = r['mobile'] ?? r['phone'] ?? '+1 (555) 019-2831';
 
-                              return Card(
-                                elevation: 4,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.04),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
                                 child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(20),
                                   onTap: () {
-                                    Navigator.push(
+                                    Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => MainDashboardScreen(restId: restId),
+                                        builder: (context) => MainDashboardScreen(
+                                          restId: restId,
+                                          companyId: widget.companyId,
+                                          companyRestaurants: _restaurants,
+                                        ),
                                       ),
                                     );
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.all(20.0),
+                                    padding: const EdgeInsets.all(22.0),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            CircleAvatar(
-                                              backgroundColor: Colors.indigo.shade100,
-                                              child: Icon(Icons.storefront, color: Colors.indigo.shade800),
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                gradient: const LinearGradient(
+                                                  colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                                                ),
+                                                borderRadius: BorderRadius.circular(14),
+                                              ),
+                                              child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 26),
                                             ),
-                                            const SizedBox(width: 12),
+                                            const SizedBox(width: 14),
                                             Expanded(
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  Text(
-                                                    name,
-                                                    style: const TextStyle(
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 16,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          name,
+                                                          style: const TextStyle(
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 16,
+                                                            color: Color(0xFF0F172A),
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(0xFFECFDF5),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: const [
+                                                            CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
+                                                            SizedBox(width: 4),
+                                                            Text(
+                                                              'Active',
+                                                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
+                                                  const SizedBox(height: 2),
                                                   Text(
-                                                    'Rest ID: $restId',
-                                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                                    'Outlet ID: #$restId',
+                                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
                                                   ),
                                                 ],
                                               ),
                                             ),
                                           ],
                                         ),
-                                        Text(
-                                          address,
-                                          style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF94A3B8)),
+                                                const SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    address,
+                                                    style: const TextStyle(color: Color(0xFF475569), fontSize: 12),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.phone_outlined, size: 14, color: Color(0xFF94A3B8)),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  mobile,
+                                                  style: const TextStyle(color: Color(0xFF475569), fontSize: 12),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.end,
                                           children: const [
                                             Text(
-                                              'Open Dashboard',
+                                              'Launch Dashboard',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.indigo,
+                                                fontSize: 13,
+                                                color: Color(0xFF4F46E5),
                                               ),
                                             ),
                                             SizedBox(width: 4),
-                                            Icon(Icons.arrow_forward, size: 16, color: Colors.indigo),
+                                            Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFF4F46E5)),
                                           ],
                                         ),
                                       ],
@@ -238,3 +369,4 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
     );
   }
 }
+
