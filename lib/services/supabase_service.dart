@@ -126,6 +126,8 @@ class SupabaseService {
               settings['customerData'] = obj['customerData'];
             } else if (obj.containsKey('customerData') && obj['print_copy_data_table'] == 'printCopyTable') {
               settings['printCopyData'] = obj['customerData'];
+            } else if (obj.containsKey('printCopyData') && obj['print_copy_data_table'] == 'printCopyTable') {
+              settings['printCopyData'] = obj['printCopyData'];
             }
             if (obj.containsKey('basicSettingData')) {
               settings['basicSettingData'] = obj['basicSettingData'];
@@ -250,20 +252,75 @@ class SupabaseService {
 
   // Save updated settings_data back to Supabase
   Future<void> updateSettingsData(String restId, Map<String, dynamic> updatedSettings) async {
-    final jsonString = jsonEncode(updatedSettings);
+    // Build the clean settings map to store as proper JSON (not a string)
+    final cleanSettings = <String, dynamic>{};
+    if (updatedSettings.containsKey('restaurant_id')) cleanSettings['restaurant_id'] = updatedSettings['restaurant_id'];
+    if (updatedSettings.containsKey('restaurant_pass')) cleanSettings['restaurant_pass'] = updatedSettings['restaurant_pass'];
+    if (updatedSettings.containsKey('data_table')) cleanSettings['data_table'] = updatedSettings['data_table'];
+
+    // If total_data_table exists, use it directly; otherwise rebuild it from top-level keys
+    if (updatedSettings.containsKey('total_data_table') && updatedSettings['total_data_table'] is List && (updatedSettings['total_data_table'] as List).isNotEmpty) {
+      cleanSettings['total_data_table'] = updatedSettings['total_data_table'];
+    } else {
+      // Rebuild total_data_table from the flattened top-level keys
+      cleanSettings['data_table'] = 'allSettingsData';
+      cleanSettings['total_data_table'] = [
+        {"staff_data_table": "staffTable", "staffData": updatedSettings['staffData'] ?? updatedSettings['staff'] ?? []},
+        {"area_data_table": "areaTable", "areaData": updatedSettings['areaData'] ?? updatedSettings['areas'] ?? []},
+        {"table_data_table": "table", "tableData": updatedSettings['tableData'] ?? updatedSettings['tables'] ?? []},
+        {"tag_data_table": "tagTable", "tagData": updatedSettings['tagData'] ?? updatedSettings['tags'] ?? []},
+        {"cuisine_data_table": "cuisineBox", "cuisineData": updatedSettings['cuisineData'] ?? updatedSettings['cuisines'] ?? []},
+        {"category_data_table": "categoryBox", "categoryData": updatedSettings['categoryData'] ?? updatedSettings['categories'] ?? []},
+        {"till_data_table": "tillBox", "tillData": updatedSettings['tillData'] ?? updatedSettings['tills'] ?? []},
+        {"kitchen_data_table": "KitchenTable", "kitchenData": updatedSettings['kitchenData'] ?? updatedSettings['kitchens'] ?? []},
+        {"bar_data_table": "barTable", "barData": updatedSettings['barData'] ?? updatedSettings['bars'] ?? []},
+        {"promotion_data_table": "promotionHiveTable", "promotionData": updatedSettings['promotionData'] ?? updatedSettings['promotions'] ?? []},
+        {"basicSetting_data_table": "settingBox", "basicSettingData": updatedSettings['basicSettingData'] ?? updatedSettings['basicSettings'] ?? []},
+        {"foodSetting_data_table": "foodTable", "foodSettingData": updatedSettings['foodSettingData'] ?? updatedSettings['items'] ?? []},
+        {"paymentMethod_data_table": "paymentMethodTable", "paymentMethodSettingData": updatedSettings['paymentMethodSettingData'] ?? updatedSettings['paymentMethods'] ?? []},
+        {"customer_data_table": "customerTable", "customerData": updatedSettings['customerData'] ?? updatedSettings['customers'] ?? []},
+        {"print_copy_data_table": "printCopyTable", "printCopyData": updatedSettings['printCopyData'] ?? {"kitchenPrint_all": 1, "kitchenPrint_new": 1, "kitchenPrint_barOnly": 1, "kitchenPrint_kitchenOnly": 1, "guestPrint": 1, "releasePrint": 1}},
+        {"kukd_data_table": "kukdApiCredential", "kukdData": updatedSettings['kukdData'] ?? {}},
+        {"expense_group_data_table": "expenseGroupTable", "expenseGroupData": updatedSettings['expenseGroupData'] ?? updatedSettings['expenseGroups'] ?? []},
+        {"expense_head_data_table": "expenseHeadTable", "expenseHeadData": updatedSettings['expenseHeadData'] ?? updatedSettings['expenseHeads'] ?? []},
+        {"expense_item_data_table": "expenseItemTable", "expenseItemData": updatedSettings['expenseItemData'] ?? updatedSettings['expenseItems'] ?? []},
+        {"stock_data_table": "stockTable", "stockData": updatedSettings['stockData'] ?? updatedSettings['stocks'] ?? []},
+        {"stock_log_data_table": "stockLogTable", "stockLogData": updatedSettings['stockLogData'] ?? updatedSettings['stockLogs'] ?? []},
+        {"ingredient_data_table": "ingredientTable", "ingredientData": updatedSettings['ingredientData'] ?? updatedSettings['ingredients'] ?? []},
+        {"recipe_data_table": "recipeTable", "recipeData": updatedSettings['recipeData'] ?? updatedSettings['recipes'] ?? []},
+      ];
+    }
 
     try {
-      await _supabase
+      final response = await _supabase
           .from('app_backups')
-          .update({'settings_data': jsonString})
-          .eq('rest_id', restId);
+          .update({'settings_data': cleanSettings})
+          .eq('rest_id', restId)
+          .select('rest_id');
+          
+      if (response.isEmpty) {
+        await _supabase.from('app_backups').insert({
+          'rest_id': restId,
+          'settings_data': cleanSettings,
+          'orders_data': []
+        });
+      }
     } catch (_) {
       final numId = int.tryParse(restId);
       if (numId != null) {
-        await _supabase
+        final response2 = await _supabase
             .from('app_backups')
-            .update({'settings_data': jsonString})
-            .eq('rest_id', numId);
+            .update({'settings_data': cleanSettings})
+            .eq('rest_id', numId)
+            .select('rest_id');
+            
+        if (response2.isEmpty) {
+          await _supabase.from('app_backups').insert({
+            'rest_id': numId,
+            'settings_data': cleanSettings,
+            'orders_data': []
+          });
+        }
       } else {
         rethrow;
       }
@@ -274,17 +331,35 @@ class SupabaseService {
   Future<void> updateOrdersData(String restId, List<OrderModel> orders) async {
     final jsonList = orders.map((o) => o.toJson()).toList();
     try {
-      await _supabase
+      final response = await _supabase
           .from('app_backups')
           .update({'orders_data': jsonList})
-          .eq('rest_id', restId);
+          .eq('rest_id', restId)
+          .select('rest_id');
+          
+      if (response.isEmpty) {
+        await _supabase.from('app_backups').insert({
+          'rest_id': restId,
+          'settings_data': {},
+          'orders_data': jsonList
+        });
+      }
     } catch (_) {
       final numId = int.tryParse(restId);
       if (numId != null) {
-        await _supabase
+        final response2 = await _supabase
             .from('app_backups')
             .update({'orders_data': jsonList})
-            .eq('rest_id', numId);
+            .eq('rest_id', numId)
+            .select('rest_id');
+            
+        if (response2.isEmpty) {
+          await _supabase.from('app_backups').insert({
+            'rest_id': numId,
+            'settings_data': {},
+            'orders_data': jsonList
+          });
+        }
       } else {
         rethrow;
       }

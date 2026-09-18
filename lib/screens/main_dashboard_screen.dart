@@ -117,8 +117,27 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
         }
       } else {
         setState(() {
-          _errorMessage = 'No backup record found for Rest ID: $_currentRestId';
+          _orders = [];
+          _settingsData = {};
+          _lastSyncedTime = DateTime.now();
+          _hasUnsavedChanges = false;
         });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.info_outline_rounded, color: Colors.white),
+                  SizedBox(width: 10),
+                  Text('No existing data found. Starting fresh.'),
+                ],
+              ),
+              backgroundColor: const Color(0xFFD97706),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() {

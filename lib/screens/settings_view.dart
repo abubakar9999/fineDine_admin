@@ -118,89 +118,92 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     _localSettings['paymentMethods'] = paymentMethods;
     _localSettings['paymentMethodSettingData'] = paymentMethods;
 
-    _saveCustomers(customers);
-    _saveExpenseGroups(expenseGroups);
-    _saveExpenseHeads(expenseHeads);
-    _saveExpenseItems(expenseItems);
-    _saveStocks(stocks);
-    _saveStockLogs(stockLogs);
-    _saveIngredients(ingredients);
-    _saveRecipes(recipes);
+    _localSettings['customers'] = customers;
+    _localSettings['customerData'] = customers;
+    _localSettings['expenseGroups'] = expenseGroups;
+    _localSettings['expenseGroupData'] = expenseGroups;
+    _localSettings['expenseHeads'] = expenseHeads;
+    _localSettings['expenseHeadData'] = expenseHeads;
+    _localSettings['expenseItems'] = expenseItems;
+    _localSettings['expenseItemData'] = expenseItems;
+    _localSettings['stocks'] = stocks;
+    _localSettings['stockData'] = stocks;
+    _localSettings['stockLogs'] = stockLogs;
+    _localSettings['stockLogData'] = stockLogs;
+    _localSettings['ingredients'] = ingredients;
+    _localSettings['ingredientData'] = ingredients;
+    _localSettings['recipes'] = recipes;
+    _localSettings['recipeData'] = recipes;
 
-    // Sync inside total_data_table structure if present
+    // Preserve print copy and kukd data from existing total_data_table
+    Map<String, dynamic> printCopyData = {
+      "kitchenPrint_all": 1,
+      "kitchenPrint_new": 1,
+      "kitchenPrint_barOnly": 1,
+      "kitchenPrint_kitchenOnly": 1,
+      "guestPrint": 1,
+      "releasePrint": 1,
+    };
+    Map<String, dynamic> kukdData = {};
+    List<dynamic> basicSettingData = _localSettings['basicSettingData'] is List ? _localSettings['basicSettingData'] : [];
+
     if (_localSettings['total_data_table'] is List) {
-      final List totalList = List<dynamic>.from(_localSettings['total_data_table']);
-
-      for (int i = 0; i < totalList.length; i++) {
-        final obj = totalList[i];
-        if (obj is Map<String, dynamic>) {
-          final Map<String, dynamic> mutableObj = Map<String, dynamic>.from(obj);
-          if (mutableObj.containsKey('foodSettingData') || mutableObj['foodSetting_data_table'] == 'foodTable') {
-            mutableObj['foodSettingData'] = items;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('categoryData') || mutableObj['category_data_table'] == 'categoryBox') {
-            mutableObj['categoryData'] = categories;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('cuisineData') || mutableObj['cuisine_data_table'] == 'cuisineBox') {
-            mutableObj['cuisineData'] = cuisines;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('tagData') || mutableObj['tag_data_table'] == 'tagTable') {
-            mutableObj['tagData'] = tags;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('tableData') || mutableObj['table_data_table'] == 'table') {
-            mutableObj['tableData'] = tables;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('areaData') || mutableObj['area_data_table'] == 'areaTable') {
-            mutableObj['areaData'] = areas;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('staffData') || mutableObj['staff_data_table'] == 'staffTable') {
-            mutableObj['staffData'] = staff;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('promotionData') || mutableObj['promotion_data_table'] == 'promotionHiveTable') {
-            mutableObj['promotionData'] = promotions;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('tillData') || mutableObj['till_data_table'] == 'tillBox') {
-            mutableObj['tillData'] = tills;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('kitchenData') || mutableObj['kitchen_data_table'] == 'KitchenTable') {
-            mutableObj['kitchenData'] = kitchens;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('barData') || mutableObj['bar_data_table'] == 'barTable') {
-            mutableObj['barData'] = bars;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('paymentMethodSettingData') || mutableObj['paymentMethod_data_table'] == 'paymentMethodTable') {
-            mutableObj['paymentMethodSettingData'] = paymentMethods;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('customerData') && mutableObj['customer_data_table'] == 'customerTable') {
-            mutableObj['customerData'] = customers;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('expenseGroupData') || mutableObj['expense_group_data_table'] == 'expenseGroupTable') {
-            mutableObj['expenseGroupData'] = expenseGroups;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('expenseHeadData') || mutableObj['expense_head_data_table'] == 'expenseHeadTable') {
-            mutableObj['expenseHeadData'] = expenseHeads;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('expenseItemData') || mutableObj['expense_item_data_table'] == 'expenseItemTable') {
-            mutableObj['expenseItemData'] = expenseItems;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('stockData') || mutableObj['stock_data_table'] == 'stockTable') {
-            mutableObj['stockData'] = stocks;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('stockLogData') || mutableObj['stock_log_data_table'] == 'stockLogTable') {
-            mutableObj['stockLogData'] = stockLogs;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('ingredientData') || mutableObj['ingredient_data_table'] == 'ingredientTable') {
-            mutableObj['ingredientData'] = ingredients;
-            totalList[i] = mutableObj;
-          } else if (mutableObj.containsKey('recipeData') || mutableObj['recipe_data_table'] == 'recipeTable') {
-            mutableObj['recipeData'] = recipes;
-            totalList[i] = mutableObj;
+      final List totalList = _localSettings['total_data_table'] as List;
+      for (var obj in totalList) {
+        if (obj is Map) {
+          if (obj.containsKey('printCopyData') && obj['printCopyData'] is Map) {
+            printCopyData = Map<String, dynamic>.from(obj['printCopyData']);
+          }
+          if (obj.containsKey('kukdData') && obj['kukdData'] is Map) {
+            kukdData = Map<String, dynamic>.from(obj['kukdData']);
+          }
+          if (obj.containsKey('basicSettingData') && obj['basicSettingData'] is List) {
+            basicSettingData = obj['basicSettingData'];
           }
         }
       }
-
-      _localSettings['total_data_table'] = totalList;
     }
+    if (_localSettings['printCopyData'] is Map) {
+      printCopyData = Map<String, dynamic>.from(_localSettings['printCopyData'] as Map);
+    }
+    if (_localSettings['kukdData'] is Map) {
+      kukdData = Map<String, dynamic>.from(_localSettings['kukdData'] as Map);
+    }
+    if (_localSettings['basicSettings'] is List && (_localSettings['basicSettings'] as List).isNotEmpty) {
+      basicSettingData = _localSettings['basicSettings'];
+    }
+
+    _localSettings['printCopyData'] = printCopyData;
+    _localSettings['kukdData'] = kukdData;
+    _localSettings['basicSettingData'] = basicSettingData;
+
+    // Always rebuild total_data_table in the exact format the mobile app expects
+    _localSettings['data_table'] = 'allSettingsData';
+    _localSettings['total_data_table'] = [
+      {"staff_data_table": "staffTable", "staffData": staff},
+      {"area_data_table": "areaTable", "areaData": areas},
+      {"table_data_table": "table", "tableData": tables},
+      {"tag_data_table": "tagTable", "tagData": tags},
+      {"cuisine_data_table": "cuisineBox", "cuisineData": cuisines},
+      {"category_data_table": "categoryBox", "categoryData": categories},
+      {"till_data_table": "tillBox", "tillData": tills},
+      {"kitchen_data_table": "KitchenTable", "kitchenData": kitchens},
+      {"bar_data_table": "barTable", "barData": bars},
+      {"promotion_data_table": "promotionHiveTable", "promotionData": promotions},
+      {"basicSetting_data_table": "settingBox", "basicSettingData": basicSettingData},
+      {"foodSetting_data_table": "foodTable", "foodSettingData": items},
+      {"paymentMethod_data_table": "paymentMethodTable", "paymentMethodSettingData": paymentMethods},
+      {"customer_data_table": "customerTable", "customerData": customers},
+      {"print_copy_data_table": "printCopyTable", "printCopyData": printCopyData},
+      {"kukd_data_table": "kukdApiCredential", "kukdData": kukdData},
+      {"expense_group_data_table": "expenseGroupTable", "expenseGroupData": expenseGroups},
+      {"expense_head_data_table": "expenseHeadTable", "expenseHeadData": expenseHeads},
+      {"expense_item_data_table": "expenseItemTable", "expenseItemData": expenseItems},
+      {"stock_data_table": "stockTable", "stockData": stocks},
+      {"stock_log_data_table": "stockLogTable", "stockLogData": stockLogs},
+      {"ingredient_data_table": "ingredientTable", "ingredientData": ingredients},
+      {"recipe_data_table": "recipeTable", "recipeData": recipes},
+    ];
   }
 
   List<Map<String, dynamic>> _extractArray(List<String> keys) {
@@ -580,6 +583,14 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                             : 'No food items added yet.',
                         style: TextStyle(color: Colors.grey.shade600),
                       ),
+                      const SizedBox(height: 16),
+                      if (_itemSearchQuery.isEmpty && _selectedCategoryFilter == 'All')
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                          onPressed: () => _showFoodItemDialog(),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Food Item'),
+                        ),
                     ],
                   ),
                 )
@@ -1673,7 +1684,22 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         const SizedBox(height: 16),
         Expanded(
           child: filtered.isEmpty
-              ? Center(child: Text('No $typeName added yet.'))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('No $typeName added yet.', style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      if (_catCuisineTagSearch.isEmpty)
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                          onPressed: () => _showMetadataDialog(typeName, dataList, onUpdateList),
+                          icon: const Icon(Icons.add),
+                          label: Text('Add $typeName'),
+                        ),
+                    ],
+                  ),
+                )
               : ListView.builder(
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
@@ -1848,7 +1874,22 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         const SizedBox(height: 16),
         Expanded(
           child: filteredTables.isEmpty
-              ? Center(child: Text('No tables added yet.'))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('No tables added yet.', style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      if (_tableSearchQuery.isEmpty)
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                          onPressed: () => _showTableDialog(),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Table'),
+                        ),
+                    ],
+                  ),
+                )
               : ListView.builder(
                   itemCount: filteredTables.length,
                   itemBuilder: (context, index) {
@@ -2030,7 +2071,21 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         const SizedBox(height: 16),
         Expanded(
           child: areas.isEmpty
-              ? Center(child: Text('No dining areas added yet.'))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('No dining areas added yet.', style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                        onPressed: () => _showAreaDialog(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Area'),
+                      ),
+                    ],
+                  ),
+                )
               : ListView.builder(
                   itemCount: areas.length,
                   itemBuilder: (context, index) {
@@ -2205,7 +2260,21 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         const SizedBox(height: 12),
         Expanded(
           child: staffList.isEmpty
-              ? const Center(child: Text('No staff members registered yet.'))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('No staff members registered yet.', style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                        onPressed: () => _showStaffDialog(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Staff Member'),
+                      ),
+                    ],
+                  ),
+                )
               : ListView.builder(
                   itemCount: staffList.length,
                   itemBuilder: (context, index) {
@@ -2281,7 +2350,21 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         const SizedBox(height: 12),
         Expanded(
           child: tills.isEmpty
-              ? const Center(child: Text('No cash tills added yet.'))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('No cash tills added yet.', style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                        onPressed: () => _showTillDialog(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Till'),
+                      ),
+                    ],
+                  ),
+                )
               : ListView.builder(
                   itemCount: tills.length,
                   itemBuilder: (context, index) {
