@@ -213,6 +213,7 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
                               final String name = r['name'] ?? 'Restaurant #$restId';
                               final String address = r['address'] ?? 'No address listed';
                               final String mobile = r['mobile'] ?? r['phone'] ?? '+1 (555) 019-2831';
+                              final bool manageTable = r['manage_table'] ?? true;
 
                               return Container(
                                 decoration: BoxDecoration(
@@ -279,24 +280,56 @@ class _RestaurantSelectionScreenState extends State<RestaurantSelectionScreen> {
                                                           overflow: TextOverflow.ellipsis,
                                                         ),
                                                       ),
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                        decoration: BoxDecoration(
-                                                          color: const Color(0xFFECFDF5),
-                                                          borderRadius: BorderRadius.circular(6),
-                                                          border: Border.all(color: const Color(0xFFA7F3D0)),
-                                                        ),
-                                                        child: Row(
-                                                          mainAxisSize: MainAxisSize.min,
-                                                          children: const [
-                                                            CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
-                                                            SizedBox(width: 4),
-                                                            Text(
-                                                              'Active',
-                                                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
+                                                      Wrap(
+                                                        spacing: 6,
+                                                        children: [
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                                            decoration: BoxDecoration(
+                                                              color: manageTable ? const Color(0xFFECFDF5) : const Color(0xFFEEF2FF),
+                                                              borderRadius: BorderRadius.circular(6),
+                                                              border: Border.all(color: manageTable ? const Color(0xFFA7F3D0) : const Color(0xFFC7D2FE)),
                                                             ),
-                                                          ],
-                                                        ),
+                                                            child: Row(
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                Icon(
+                                                                  manageTable ? Icons.table_restaurant_rounded : Icons.point_of_sale_rounded,
+                                                                  size: 11,
+                                                                  color: manageTable ? const Color(0xFF059669) : const Color(0xFF4F46E5),
+                                                                ),
+                                                                const SizedBox(width: 4),
+                                                                Text(
+                                                                  manageTable ? 'Tables ON' : 'Counter',
+                                                                  style: TextStyle(
+                                                                    fontSize: 10,
+                                                                    fontWeight: FontWeight.bold,
+                                                                    color: manageTable ? const Color(0xFF065F46) : const Color(0xFF4338CA),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                             ),
+                                                          ),
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                            decoration: BoxDecoration(
+                                                              color: const Color(0xFFECFDF5),
+                                                              borderRadius: BorderRadius.circular(6),
+                                                              border: Border.all(color: const Color(0xFFA7F3D0)),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: const [
+                                                                CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
+                                                                SizedBox(width: 4),
+                                                                Text(
+                                                                  'Active',
+                                                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF047857)),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
                                                     ],
                                                   ),

@@ -726,6 +726,7 @@ class SupabaseService {
       'restaurant_id': raw['restaurant_id'] ?? restId,
       'restaurant_pass': raw['restaurant_pass'] ?? '',
       'data_table': 'allSettingsData',
+      'manage_table': raw['manage_table'] ?? true,
       'total_data_table': [
         {"staff_data_table": "staffTable", "staffData": cleanStaff},
         {"area_data_table": "areaTable", "areaData": cleanAreas},
@@ -804,11 +805,10 @@ class SupabaseService {
         restUpdate['manage_table'] = updatedSettings['manage_table'] == true;
       }
       final numId = int.tryParse(restId);
-      if (numId != null) {
-        await _supabase.from('restaurants').update(restUpdate).eq('id', numId);
-      } else {
-        await _supabase.from('restaurants').update(restUpdate).or('id.eq.$restId,token.eq.$restId');
-      }
+      final orFilter = numId != null
+          ? 'id.eq.$restId,id.eq.$numId,token.eq.$restId,email.eq.$restId'
+          : 'id.eq.$restId,token.eq.$restId,email.eq.$restId';
+      await _supabase.from('restaurants').update(restUpdate).or(orFilter);
     } catch (_) {}
   }
 

@@ -7,6 +7,7 @@ import 'dashboard_view.dart';
 import 'order_reports_view.dart';
 import 'settings_view.dart';
 import 'company_login_screen.dart';
+import 'admin_management_screen.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   final String restId;
@@ -681,6 +682,37 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                         ),
                       ),
                     ],
+                    Builder(builder: (context) {
+                      final bool isTableOn = _settingsData['manage_table'] != false;
+                      return Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isTableOn ? const Color(0xFFECFDF5) : const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: isTableOn ? const Color(0xFFA7F3D0) : const Color(0xFFC7D2FE)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isTableOn ? Icons.table_restaurant_rounded : Icons.point_of_sale_rounded,
+                              size: 11,
+                              color: isTableOn ? const Color(0xFF059669) : const Color(0xFF4F46E5),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isTableOn ? 'Tables Active' : 'Counter Mode',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isTableOn ? const Color(0xFF065F46) : const Color(0xFF4338CA),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -722,6 +754,55 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             index: 2,
             title: 'Menu & Settings',
             icon: Icons.tune_rounded,
+          ),
+
+          // Super Admin & Outlets Portal Button
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: _isSidebarCollapsed ? 8 : 12, vertical: 4),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminManagementScreen()),
+                );
+                _loadBackupData();
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: _isSidebarCollapsed ? 8 : 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF2FF),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF4F46E5), size: 18),
+                    ),
+                    if (!_isSidebarCollapsed) ...[
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Super Admin Outlets',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 11, color: Color(0xFF94A3B8)),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
 
           const Spacer(),

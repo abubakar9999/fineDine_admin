@@ -73,8 +73,9 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
 
     try {
       final supabase = Supabase.instance.client;
+      final String rawId = _idController.text.trim();
       final data = {
-        'id': int.tryParse(_idController.text.trim()),
+        'id': rawId,
         'name': _nameController.text.trim(),
         'owner_name': _ownerNameController.text.trim(),
         'address': _addressController.text.trim(),
@@ -90,10 +91,37 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
       };
 
       if (_isEditMode) {
-        await supabase.from('restaurants').update(data).eq('id', widget.restaurant!['id']);
+        final origId = widget.restaurant!['id'];
+        final origEmail = widget.restaurant!['email'] ?? '';
+        final orFilter = 'id.eq.$origId${origEmail.isNotEmpty ? ",email.eq.$origEmail" : ""}';
+        await supabase.from('restaurants').update(data).or(orFilter);
+
+        // Also update settings_data if present
+        if (widget.restaurant!['settings_data'] != null && widget.restaurant!['settings_data'] is Map) {
+          final sData = Map<String, dynamic>.from(widget.restaurant!['settings_data']);
+          sData['manage_table'] = _manageTable;
+          await supabase.from('restaurants').update({'settings_data': sData}).or(orFilter);
+        }
+
+        // Also update app_backups table if present
+        try {
+          final numId = int.tryParse(origId.toString());
+          final bRow = await supabase.from('app_backups').select('settings_data').eq('rest_id', numId ?? origId).maybeSingle();
+          if (bRow != null && bRow['settings_data'] != null && bRow['settings_data'] is Map) {
+            final bData = Map<String, dynamic>.from(bRow['settings_data']);
+            bData['manage_table'] = _manageTable;
+            await supabase.from('app_backups').update({'settings_data': bData}).eq('rest_id', numId ?? origId);
+          }
+        } catch (_) {}
       } else {
         data['role'] = 'Owner';
         data['created_at'] = DateTime.now().toIso8601String();
+        data['settings_data'] = {
+          'restaurant_id': rawId,
+          'restaurant_pass': _passwordController.text.trim(),
+          'manage_table': _manageTable,
+          'total_data_table': [],
+        };
         await supabase.from('restaurants').insert(data);
       }
 
@@ -150,7 +178,7 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
                         icon: Icons.numbers,
                         keyboardType: TextInputType.number,
                         readOnly: _isEditMode,
-                        validator: (value) => value == null || value.isEmpty ? 'Required' : (int.tryParse(value) == null ? 'Must be a number' : null),
+                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(controller: _nameController, label: 'Restaurant Name', icon: Icons.restaurant, validator: (value) => value == null || value.isEmpty ? 'Required' : null),
