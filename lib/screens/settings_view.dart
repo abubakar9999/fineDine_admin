@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' as xl;
+import '../services/supabase_service.dart';
+import '../utils/file_saver.dart';
 
 class SettingsView extends StatefulWidget {
   final Map<String, dynamic> settingsData;
@@ -43,10 +45,12 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
   String _expenseSearchQuery = '';
   String _selectedExpenseGroupFilter = 'All';
 
+  int _systemSettingsSubTab = 0; // 0: Restaurant Profile & VAT, 1: Payment Methods, 2: Print Setup
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _localSettings = Map<String, dynamic>.from(widget.settingsData);
     _normalizeSettingsKeys();
   }
@@ -59,6 +63,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
   }
 
   void _normalizeSettingsKeys() {
+    _localSettings = SupabaseService.sanitizeSettingsData(widget.restId, _localSettings);
+
     final items = _getItems();
     final categories = _getCategories();
     final cuisines = _getCuisines();
@@ -134,76 +140,6 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     _localSettings['ingredientData'] = ingredients;
     _localSettings['recipes'] = recipes;
     _localSettings['recipeData'] = recipes;
-
-    // Preserve print copy and kukd data from existing total_data_table
-    Map<String, dynamic> printCopyData = {
-      "kitchenPrint_all": 1,
-      "kitchenPrint_new": 1,
-      "kitchenPrint_barOnly": 1,
-      "kitchenPrint_kitchenOnly": 1,
-      "guestPrint": 1,
-      "releasePrint": 1,
-    };
-    Map<String, dynamic> kukdData = {};
-    List<dynamic> basicSettingData = _localSettings['basicSettingData'] is List ? _localSettings['basicSettingData'] : [];
-
-    if (_localSettings['total_data_table'] is List) {
-      final List totalList = _localSettings['total_data_table'] as List;
-      for (var obj in totalList) {
-        if (obj is Map) {
-          if (obj.containsKey('printCopyData') && obj['printCopyData'] is Map) {
-            printCopyData = Map<String, dynamic>.from(obj['printCopyData']);
-          }
-          if (obj.containsKey('kukdData') && obj['kukdData'] is Map) {
-            kukdData = Map<String, dynamic>.from(obj['kukdData']);
-          }
-          if (obj.containsKey('basicSettingData') && obj['basicSettingData'] is List) {
-            basicSettingData = obj['basicSettingData'];
-          }
-        }
-      }
-    }
-    if (_localSettings['printCopyData'] is Map) {
-      printCopyData = Map<String, dynamic>.from(_localSettings['printCopyData'] as Map);
-    }
-    if (_localSettings['kukdData'] is Map) {
-      kukdData = Map<String, dynamic>.from(_localSettings['kukdData'] as Map);
-    }
-    if (_localSettings['basicSettings'] is List && (_localSettings['basicSettings'] as List).isNotEmpty) {
-      basicSettingData = _localSettings['basicSettings'];
-    }
-
-    _localSettings['printCopyData'] = printCopyData;
-    _localSettings['kukdData'] = kukdData;
-    _localSettings['basicSettingData'] = basicSettingData;
-
-    // Always rebuild total_data_table in the exact format the mobile app expects
-    _localSettings['data_table'] = 'allSettingsData';
-    _localSettings['total_data_table'] = [
-      {"staff_data_table": "staffTable", "staffData": staff},
-      {"area_data_table": "areaTable", "areaData": areas},
-      {"table_data_table": "table", "tableData": tables},
-      {"tag_data_table": "tagTable", "tagData": tags},
-      {"cuisine_data_table": "cuisineBox", "cuisineData": cuisines},
-      {"category_data_table": "categoryBox", "categoryData": categories},
-      {"till_data_table": "tillBox", "tillData": tills},
-      {"kitchen_data_table": "KitchenTable", "kitchenData": kitchens},
-      {"bar_data_table": "barTable", "barData": bars},
-      {"promotion_data_table": "promotionHiveTable", "promotionData": promotions},
-      {"basicSetting_data_table": "settingBox", "basicSettingData": basicSettingData},
-      {"foodSetting_data_table": "foodTable", "foodSettingData": items},
-      {"paymentMethod_data_table": "paymentMethodTable", "paymentMethodSettingData": paymentMethods},
-      {"customer_data_table": "customerTable", "customerData": customers},
-      {"print_copy_data_table": "printCopyTable", "printCopyData": printCopyData},
-      {"kukd_data_table": "kukdApiCredential", "kukdData": kukdData},
-      {"expense_group_data_table": "expenseGroupTable", "expenseGroupData": expenseGroups},
-      {"expense_head_data_table": "expenseHeadTable", "expenseHeadData": expenseHeads},
-      {"expense_item_data_table": "expenseItemTable", "expenseItemData": expenseItems},
-      {"stock_data_table": "stockTable", "stockData": stocks},
-      {"stock_log_data_table": "stockLogTable", "stockLogData": stockLogs},
-      {"ingredient_data_table": "ingredientTable", "ingredientData": ingredients},
-      {"recipe_data_table": "recipeTable", "recipeData": recipes},
-    ];
   }
 
   List<Map<String, dynamic>> _extractArray(List<String> keys) {
@@ -283,14 +219,63 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
   void _saveTills(List<Map<String, dynamic>> tills) => _updateListForKey(['tillData', 'tills'], tills);
   void _saveKitchens(List<Map<String, dynamic>> kitchens) => _updateListForKey(['kitchenData', 'kitchens'], kitchens);
   void _saveBars(List<Map<String, dynamic>> bars) => _updateListForKey(['barData', 'bars'], bars);
-  void _saveCustomers(List<Map<String, dynamic>> customers) => _updateListForKey(['customerData', 'customers'], customers);
   void _saveExpenseGroups(List<Map<String, dynamic>> groups) => _updateListForKey(['expenseGroupData', 'expenseGroups'], groups);
   void _saveExpenseHeads(List<Map<String, dynamic>> heads) => _updateListForKey(['expenseHeadData', 'expenseHeads'], heads);
   void _saveExpenseItems(List<Map<String, dynamic>> items) => _updateListForKey(['expenseItemData', 'expenseItems'], items);
   void _saveStocks(List<Map<String, dynamic>> stocks) => _updateListForKey(['stockData', 'stocks'], stocks);
   void _saveStockLogs(List<Map<String, dynamic>> logs) => _updateListForKey(['stockLogData', 'stockLogs'], logs);
   void _saveIngredients(List<Map<String, dynamic>> ingredients) => _updateListForKey(['ingredientData', 'ingredients'], ingredients);
-  void _saveRecipes(List<Map<String, dynamic>> recipes) => _updateListForKey(['recipeData', 'recipes'], recipes);
+  void _savePaymentMethods(List<Map<String, dynamic>> methods) => _updateListForKey(['paymentMethodSettingData', 'paymentMethods'], methods);
+
+  Map<String, dynamic> _getBasicSetting() {
+    final list = _extractArray(['basicSettingData', 'basicSettings']);
+    if (list.isNotEmpty) return Map<String, dynamic>.from(list.first);
+    if (_localSettings['basicSettingData'] is Map) return Map<String, dynamic>.from(_localSettings['basicSettingData']);
+    return {
+      '_id': 'setting_${widget.restId}',
+      'restName': '',
+      'vat': '20.00',
+      'currSym': '£',
+      'openingHour': '10:00',
+      'closingHour': '23:00',
+      'addrLn1': '',
+      'addrLn2': '',
+      'addrLn3': '',
+      'txtLn1': 'Thank you for dining with us!',
+      'txtLn2': 'Please visit again.',
+      'txtLn3': '',
+      'setMealDuration': 0,
+      'tillId': '',
+      'androidId': '',
+      'logo': [],
+      'restId': widget.restId,
+      'deliveryAndBag': {'delivery': [], 'bag': []},
+    };
+  }
+
+  void _saveBasicSetting(Map<String, dynamic> setting) {
+    _localSettings['basicSettingData'] = [setting];
+    _localSettings['basicSettings'] = [setting];
+    _updateListForKey(['basicSettingData', 'basicSettings'], [setting]);
+  }
+
+  Map<String, dynamic> _getPrintCopyData() {
+    if (_localSettings['printCopyData'] is Map) {
+      return Map<String, dynamic>.from(_localSettings['printCopyData']);
+    }
+    return {
+      "kitchenPrint_all": 1,
+      "kitchenPrint_new": 1,
+      "kitchenPrint_barOnly": 1,
+      "kitchenPrint_kitchenOnly": 1,
+      "guestPrint": 1,
+      "releasePrint": 1,
+    };
+  }
+
+  void _savePrintCopyData(Map<String, dynamic> printData) {
+    _localSettings['printCopyData'] = printData;
+  }
 
   Future<void> _persistChanges() async {
     setState(() => _isSaving = true);
@@ -454,6 +439,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               Tab(icon: Icon(Icons.local_offer), text: 'Promotions & Offers'),
               Tab(icon: Icon(Icons.inventory_2_rounded), text: 'Stock Management'),
               Tab(icon: Icon(Icons.account_balance_wallet_rounded), text: 'Expense Management'),
+              Tab(icon: Icon(Icons.tune_rounded), text: 'Restaurant & System Settings'),
             ],
           ),
           SizedBox(height: isMobile ? 10 : 16),
@@ -468,6 +454,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 _buildPromotionsTab(),
                 _buildStockManagementTab(),
                 _buildExpenseManagementTab(),
+                _buildRestaurantSystemSettingsTab(),
               ],
             ),
           ),
@@ -771,6 +758,30 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     final portionNameCtrl = TextEditingController();
     final portionPriceCtrl = TextEditingController();
 
+    // Days availability (CRITICAL for rest_pos so items are displayed on the order screen)
+    final rawDays = item?['days'];
+    Map<String, bool> days = (rawDays is Map)
+        ? {
+            'sat': rawDays['sat'] == true,
+            'sun': rawDays['sun'] == true,
+            'mon': rawDays['mon'] == true,
+            'tue': rawDays['tue'] == true,
+            'wed': rawDays['wed'] == true,
+            'thu': rawDays['thu'] == true,
+            'fri': rawDays['fri'] == true,
+          }
+        : {
+            'sat': true,
+            'sun': true,
+            'mon': true,
+            'tue': true,
+            'wed': true,
+            'thu': true,
+            'fri': true,
+          };
+
+    bool vatAble = item?['vatAble'] is bool ? item!['vatAble'] : false;
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -808,6 +819,61 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                     decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 16),
+
+                  // Days of the week availability
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Available Days (POS Ordering)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      TextButton(
+                        onPressed: () {
+                          setDialogState(() {
+                            final allActive = days.values.every((v) => v);
+                            days.updateAll((key, value) => !allActive);
+                          });
+                        },
+                        child: Text(days.values.every((v) => v) ? 'Uncheck All' : 'Select All Days', style: const TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'].map((dayKey) {
+                      final dayLabels = {
+                        'sat': 'Saturday',
+                        'sun': 'Sunday',
+                        'mon': 'Monday',
+                        'tue': 'Tuesday',
+                        'wed': 'Wednesday',
+                        'thu': 'Thursday',
+                        'fri': 'Friday',
+                      };
+                      final isSelected = days[dayKey] ?? true;
+                      return FilterChip(
+                        label: Text(dayLabels[dayKey] ?? dayKey),
+                        selected: isSelected,
+                        selectedColor: Colors.green.shade100,
+                        checkmarkColor: Colors.green.shade800,
+                        onSelected: (val) {
+                          setDialogState(() {
+                            days[dayKey] = val;
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // VAT Applicable toggle
+                  SwitchListTile(
+                    title: const Text('VAT / Tax Applicable', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Check if standard restaurant VAT applies to this item', style: TextStyle(fontSize: 12)),
+                    value: vatAble,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (val) => setDialogState(() => vatAble = val),
+                  ),
+                  const SizedBox(height: 12),
 
                   // Tagging Section: Categories
                   const Text('Categories Tagging', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -1021,10 +1087,22 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                   'tags': selectedTags,
                   'portions': portions,
                   'status': true,
-                  'vatAble': false,
+                  'vatAble': vatAble,
+                  'days': days,
                   'foodTypeList': ['DineIn', 'Collection', 'Delivery', 'Waiting'],
+                  'cookingTime': (item?['cookingTime'] as num?)?.toInt() ?? 0,
+                  'startTime': item?['startTime'] ?? DateTime.now().toIso8601String(),
+                  'endTime': item?['endTime'] ?? DateTime.now().add(const Duration(hours: 14)).toIso8601String(),
+                  'makedByKitchen': item?['makedByKitchen'] is List ? item!['makedByKitchen'] : [],
+                  'makedByBar': item?['makedByBar'] is List ? item!['makedByBar'] : [],
+                  'options': item?['options'] is List ? item!['options'] : [],
+                  'extras': item?['extras'] is List ? item!['extras'] : [],
+                  'relatedItems': item?['relatedItems'] is List ? item!['relatedItems'] : [],
+                  'createdBy': (item?['createdBy'] ?? 'Admin').toString(),
+                  'updatedBy': 'Admin',
                   'createdAt': item?['createdAt'] ?? DateTime.now().toIso8601String(),
                   'updatedAt': DateTime.now().toIso8601String(),
+                  '__v': (item?['__v'] as num?)?.toInt() ?? 0,
                 };
 
                 final items = _getItems();
@@ -1077,13 +1155,19 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     }
   }
 
-  void _downloadViaAnchor(Uint8List bytes, String fileName, String mimeType) {
+  void _downloadViaAnchor(Uint8List bytes, String fileName, String mimeType) async {
     try {
-      FilePicker.platform.saveFile(
+      final success = await FileSaver.saveFile(
         dialogTitle: 'Save Import Template',
         fileName: fileName,
         bytes: bytes,
+        mimeType: mimeType,
       );
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Template downloaded successfully!'), backgroundColor: Color(0xFF10B981)),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1779,7 +1863,13 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                   '_id': item?['_id'] ?? item?['id'] ?? '${typeName.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}',
                   'name': nameCtrl.text.trim(),
                   'restId': widget.restId,
-                  'sl': 0,
+                  'sl': (item?['sl'] as num?)?.toInt() ?? 0,
+                  'notes': (item?['notes'] ?? '').toString(),
+                  'createdBy': (item?['createdBy'] ?? 'Admin').toString(),
+                  'updatedBy': 'Admin',
+                  'createdAt': item?['createdAt'] ?? DateTime.now().toIso8601String(),
+                  'updatedAt': DateTime.now().toIso8601String(),
+                  '__v': (item?['__v'] as num?)?.toInt() ?? 0,
                 };
                 setState(() {
                   if (index != null && index >= 0 && index < list.length) {
@@ -2023,11 +2113,12 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                     'capacity': int.tryParse(capCtrl.text.trim()) ?? 4,
                     'status': 1,
                     'area': selectedAreaId,
-                    'createdBy': selectedCreatedBy,
-                    'updatedBy': '',
+                    'createdBy': selectedCreatedBy.isNotEmpty ? selectedCreatedBy : (table?['createdBy'] ?? 'Admin'),
+                    'updatedBy': 'Admin',
                     'restId': widget.restId,
                     'createdAt': table?['createdAt'] ?? DateTime.now().toIso8601String(),
                     'updatedAt': DateTime.now().toIso8601String(),
+                    '__v': (table?['__v'] as num?)?.toInt() ?? 0,
                   };
 
                   final tables = _getTables();
@@ -2154,6 +2245,12 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                   '_id': area?['_id'] ?? area?['id'] ?? 'area_${DateTime.now().millisecondsSinceEpoch}',
                   'name': nameCtrl.text.trim(),
                   'restId': widget.restId,
+                  'status': area?['status'] is bool ? area!['status'] : true,
+                  'createdBy': (area?['createdBy'] ?? 'Admin').toString(),
+                  'updatedBy': 'Admin',
+                  'createdAt': area?['createdAt'] ?? DateTime.now().toIso8601String(),
+                  'updatedAt': DateTime.now().toIso8601String(),
+                  '__v': (area?['__v'] as num?)?.toInt() ?? 0,
                 };
 
                 final areas = _getAreas();
@@ -2446,13 +2543,16 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 final newTill = {
                   '_id': till?['_id'] ?? till?['id'] ?? 'till_${DateTime.now().millisecondsSinceEpoch}',
                   'tillName': nameCtrl.text.trim(),
-                  'tillId': idCtrl.text.trim(),
-                  'tillStatus': false,
-                  'openingBalance': till?['openingBalance'] ?? 0,
-                  'depositAmount': till?['depositAmount'] ?? 0,
-                  'withdrawAmount': till?['withdrawAmount'] ?? 0,
-                  'totalAmount': till?['totalAmount'] ?? 0,
+                  'tillId': idCtrl.text.trim().isNotEmpty ? idCtrl.text.trim() : 'T-${DateTime.now().millisecondsSinceEpoch % 1000}',
+                  'tillStatus': till?['tillStatus'] is bool ? till!['tillStatus'] : false,
+                  'openingBalance': (till?['openingBalance'] as num?)?.toDouble() ?? 0.0,
+                  'depositAmount': (till?['depositAmount'] as num?)?.toDouble() ?? 0.0,
+                  'withdrawAmount': (till?['withdrawAmount'] as num?)?.toDouble() ?? 0.0,
+                  'totalAmount': (till?['totalAmount'] as num?)?.toDouble() ?? 0.0,
                   'restId': widget.restId,
+                  'createdAt': till?['createdAt'] ?? DateTime.now().toIso8601String(),
+                  'updatedAt': DateTime.now().toIso8601String(),
+                  '__v': (till?['__v'] as num?)?.toInt() ?? 0,
                 };
                 final list = _getTills();
                 setState(() {
@@ -2545,18 +2645,25 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 if (nameCtrl.text.trim().isNotEmpty) {
                   final newStaff = {
                     'isSync': true,
-                    'id': staff?['id'] ?? 'staff_${DateTime.now().millisecondsSinceEpoch}',
-                    'staffId': staff?['staffId'] ?? '',
+                    'id': staff?['id'] ?? staff?['_id'] ?? 'staff_${DateTime.now().millisecondsSinceEpoch}',
+                    'staffId': (staff?['staffId'] ?? '').toString().isNotEmpty ? staff!['staffId'] : 'ST-${DateTime.now().millisecondsSinceEpoch % 1000}',
                     'name': nameCtrl.text.trim(),
                     'mobile': mobileCtrl.text.trim(),
                     'empContact': mobileCtrl.text.trim(),
                     'email': emailCtrl.text.trim(),
-                    'password': passCtrl.text.trim(),
+                    'dob': (staff?['dob'] ?? '01/01/2000').toString(),
+                    'password': passCtrl.text.trim().isNotEmpty ? passCtrl.text.trim() : (staff?['password'] ?? '1234'),
                     'status': true,
                     'role': selectedRole,
+                    'tokens': (staff?['tokens'] ?? '').toString(),
+                    'restName': (staff?['restName'] ?? '').toString(),
+                    'restAddress': (staff?['restAddress'] ?? '').toString(),
                     'restId': widget.restId,
+                    'createdBy': (staff?['createdBy'] ?? 'Admin').toString(),
+                    'updatedBy': 'Admin',
                     'createdAt': staff?['createdAt'] ?? DateTime.now().toIso8601String(),
                     'updatedAt': DateTime.now().toIso8601String(),
+                    '__v': (staff?['__v'] as num?)?.toInt() ?? 0,
                   };
 
                   final staffList = _getStaff();
@@ -2926,6 +3033,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                     'rewardTypes': rewardType,
                     'rewardValue': double.tryParse(rewardValCtrl.text.trim()) ?? 0,
                     'rewardItem': selectedRewardItems,
+                    'excludedItem': promo?['excludedItem'] is List ? promo!['excludedItem'] : [],
                     'appliedOnOrderType': selectedOrderTypes,
                     'promoDays': promoDays,
                     'exclusive': promo?['exclusive'] ?? false,
@@ -2936,8 +3044,10 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                     'endDate': promo?['endDate'] ?? DateTime.now().add(const Duration(days: 365)).toIso8601String(),
                     'startTime': promo?['startTime'] ?? DateTime.now().toIso8601String(),
                     'endTime': promo?['endTime'] ?? DateTime.now().add(const Duration(days: 365)).toIso8601String(),
+                    'staffName': promo?['staffName'] ?? 'Admin',
                     'createdAt': promo?['createdAt'] ?? DateTime.now().toIso8601String(),
                     'updatedAt': DateTime.now().toIso8601String(),
+                    '__v': (promo?['__v'] as num?)?.toInt() ?? 0,
                   };
 
                   final list = _getPromotions();
@@ -2969,15 +3079,15 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.06),
+          color: color.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 10),
@@ -3156,7 +3266,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               ? const Center(child: Text('No stock items recorded yet. Click "Add Stock Entry" to create one.'))
               : ListView.separated(
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = filtered[index];
                     final current = (item['currentStock'] as num?)?.toDouble() ?? 0.0;
@@ -3177,7 +3287,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                     return ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       leading: CircleAvatar(
-                        backgroundColor: statusColor.withOpacity(0.1),
+                        backgroundColor: statusColor.withValues(alpha: 0.1),
                         child: Icon(
                           current <= 0
                               ? Icons.do_not_disturb_on_rounded
@@ -3195,7 +3305,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.1),
+                              color: statusColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: statusColor),
                             ),
@@ -3245,7 +3355,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
     return ListView.separated(
       itemCount: stockLogs.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final log = stockLogs[index];
         final type = (log['type'] ?? 'movement').toString().toUpperCase();
@@ -3260,7 +3370,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: badgeColor.withOpacity(0.1),
+            backgroundColor: badgeColor.withValues(alpha: 0.1),
             child: Icon(change >= 0 ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded, color: badgeColor),
           ),
           title: Text('${log['foodItemName'] ?? 'Item'} (${change >= 0 ? "+$change" : "$change"})', style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -3281,7 +3391,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
     return ListView.separated(
       itemCount: ingredients.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final ing = ingredients[index];
         final current = (ing['currentStock'] as num?)?.toDouble() ?? 0.0;
@@ -3821,7 +3931,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               ? const Center(child: Text('No expense entries found. Click "Add Expense Entry" to record one.'))
               : ListView.separated(
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = filtered[index];
                     final amt = (item['amount'] as num?)?.toDouble() ?? 0.0;
@@ -3908,7 +4018,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                         ? const Center(child: Text('No Expense Groups defined.'))
                         : ListView.separated(
                             itemCount: groups.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            separatorBuilder: (_, _) => const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final grp = groups[index];
                               return ListTile(
@@ -3955,7 +4065,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                         ? const Center(child: Text('No Expense Heads defined.'))
                         : ListView.separated(
                             itemCount: heads.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            separatorBuilder: (_, _) => const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final h = heads[index];
                               return ListTile(
@@ -4274,6 +4384,543 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // --- 8. RESTAURANT & SYSTEM SETTINGS TAB ---
+  // ==========================================
+  Widget _buildRestaurantSystemSettingsTab() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            ChoiceChip(
+              label: const Text('Restaurant Profile & VAT'),
+              selected: _systemSettingsSubTab == 0,
+              selectedColor: Colors.indigo.shade100,
+              onSelected: (val) {
+                if (val) setState(() => _systemSettingsSubTab = 0);
+              },
+            ),
+            const SizedBox(width: 12),
+            ChoiceChip(
+              label: Text('Payment Methods (${_getPaymentMethods().length})'),
+              selected: _systemSettingsSubTab == 1,
+              selectedColor: Colors.teal.shade100,
+              onSelected: (val) {
+                if (val) setState(() => _systemSettingsSubTab = 1);
+              },
+            ),
+            const SizedBox(width: 12),
+            ChoiceChip(
+              label: const Text('Receipt & Kitchen Print Copies'),
+              selected: _systemSettingsSubTab == 2,
+              selectedColor: Colors.amber.shade100,
+              onSelected: (val) {
+                if (val) setState(() => _systemSettingsSubTab = 2);
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: _systemSettingsSubTab == 0
+              ? _buildBasicRestaurantProfileSubView()
+              : _systemSettingsSubTab == 1
+                  ? _buildPaymentMethodsSubView()
+                  : _buildPrintCopiesSubView(),
+        ),
+      ],
+    );
+  }
+
+  // --- SubView 1: Restaurant Profile, VAT & Address ---
+  Widget _buildBasicRestaurantProfileSubView() {
+    final basic = _getBasicSetting();
+
+    final nameCtrl = TextEditingController(text: basic['restName'] ?? '');
+    final vatCtrl = TextEditingController(text: basic['vat'] ?? '20.00');
+    final currCtrl = TextEditingController(text: basic['currSym'] ?? '£');
+    final openCtrl = TextEditingController(text: basic['openingHour'] ?? '10:00');
+    final closeCtrl = TextEditingController(text: basic['closingHour'] ?? '23:00');
+    final addr1Ctrl = TextEditingController(text: basic['addrLn1'] ?? '');
+    final addr2Ctrl = TextEditingController(text: basic['addrLn2'] ?? '');
+    final addr3Ctrl = TextEditingController(text: basic['addrLn3'] ?? '');
+    final txt1Ctrl = TextEditingController(text: basic['txtLn1'] ?? 'Thank you for dining with us!');
+    final txt2Ctrl = TextEditingController(text: basic['txtLn2'] ?? 'Please visit again.');
+    final txt3Ctrl = TextEditingController(text: basic['txtLn3'] ?? '');
+    int mealDuration = (basic['setMealDuration'] as num?)?.toInt() ?? 0;
+
+    return SingleChildScrollView(
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.indigo.shade50,
+                        radius: 22,
+                        child: Icon(Icons.storefront, color: Colors.indigo.shade800),
+                      ),
+                      const SizedBox(width: 12),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Restaurant General & POS Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text('These settings directly configure the POS till headers, VAT calculation, and receipt printing', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 32),
+
+                  const Text('Restaurant Identity & Tax', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.indigo)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextFormField(
+                          controller: nameCtrl,
+                          decoration: const InputDecoration(labelText: 'Restaurant Display Name', prefixIcon: Icon(Icons.restaurant), border: OutlineInputBorder()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 1,
+                        child: TextFormField(
+                          controller: vatCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(labelText: 'VAT Rate (%)', prefixIcon: Icon(Icons.percent), border: OutlineInputBorder()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 1,
+                        child: TextFormField(
+                          controller: currCtrl,
+                          decoration: const InputDecoration(labelText: 'Currency Symbol', prefixIcon: Icon(Icons.currency_pound), border: OutlineInputBorder()),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: openCtrl,
+                          decoration: const InputDecoration(labelText: 'Opening Time (e.g. 10:00)', prefixIcon: Icon(Icons.schedule), border: OutlineInputBorder()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: closeCtrl,
+                          decoration: const InputDecoration(labelText: 'Closing Time (e.g. 23:00)', prefixIcon: Icon(Icons.nightlight_round), border: OutlineInputBorder()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          value: [0, 15, 30, 45, 60, 75, 90].contains(mealDuration) ? mealDuration : 0,
+                          decoration: const InputDecoration(labelText: 'Meal Duration (Minutes)', border: OutlineInputBorder()),
+                          items: const [
+                            DropdownMenuItem(value: 0, child: Text('Off / Unlimited')),
+                            DropdownMenuItem(value: 15, child: Text('15 Minutes')),
+                            DropdownMenuItem(value: 30, child: Text('30 Minutes')),
+                            DropdownMenuItem(value: 45, child: Text('45 Minutes')),
+                            DropdownMenuItem(value: 60, child: Text('60 Minutes')),
+                            DropdownMenuItem(value: 75, child: Text('75 Minutes')),
+                            DropdownMenuItem(value: 90, child: Text('90 Minutes')),
+                          ],
+                          onChanged: (val) => mealDuration = val ?? 0,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Divider(height: 32),
+                  const Text('Restaurant Physical Address', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.indigo)),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: addr1Ctrl,
+                    decoration: const InputDecoration(labelText: 'Address Line 1 (Street & Number)', prefixIcon: Icon(Icons.location_on), border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: addr2Ctrl,
+                          decoration: const InputDecoration(labelText: 'Address Line 2 (Area / District)', border: OutlineInputBorder()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: addr3Ctrl,
+                          decoration: const InputDecoration(labelText: 'Address Line 3 (City & Postcode)', border: OutlineInputBorder()),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Divider(height: 32),
+                  const Text('Receipt Header & Footer Messages', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.indigo)),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: txt1Ctrl,
+                    decoration: const InputDecoration(labelText: 'Receipt Message Line 1', prefixIcon: Icon(Icons.message), border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: txt2Ctrl,
+                    decoration: const InputDecoration(labelText: 'Receipt Message Line 2', prefixIcon: Icon(Icons.message), border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: txt3Ctrl,
+                    decoration: const InputDecoration(labelText: 'Receipt Message Line 3 (e.g. WiFi Pass)', prefixIcon: Icon(Icons.wifi), border: OutlineInputBorder()),
+                  ),
+
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                      onPressed: () {
+                        final updated = Map<String, dynamic>.from(basic);
+                        updated['_id'] = basic['_id'] ?? 'setting_${widget.restId}';
+                        updated['restName'] = nameCtrl.text.trim();
+                        updated['vat'] = vatCtrl.text.trim().isNotEmpty ? vatCtrl.text.trim() : '20.00';
+                        updated['currSym'] = currCtrl.text.trim().isNotEmpty ? currCtrl.text.trim() : '£';
+                        updated['openingHour'] = openCtrl.text.trim();
+                        updated['closingHour'] = closeCtrl.text.trim();
+                        updated['setMealDuration'] = mealDuration;
+                        updated['addrLn1'] = addr1Ctrl.text.trim();
+                        updated['addrLn2'] = addr2Ctrl.text.trim();
+                        updated['addrLn3'] = addr3Ctrl.text.trim();
+                        updated['txtLn1'] = txt1Ctrl.text.trim();
+                        updated['txtLn2'] = txt2Ctrl.text.trim();
+                        updated['txtLn3'] = txt3Ctrl.text.trim();
+                        updated['restId'] = widget.restId;
+                        updated['logo'] = basic['logo'] is List ? basic['logo'] : [];
+                        updated['tillId'] = (basic['tillId'] ?? '').toString();
+                        updated['androidId'] = (basic['androidId'] ?? '').toString();
+                        updated['deliveryAndBag'] = basic['deliveryAndBag'] is Map ? basic['deliveryAndBag'] : {'delivery': [], 'bag': []};
+
+                        setState(() {
+                          _saveBasicSetting(updated);
+                        });
+                        _persistChanges();
+                      },
+                      icon: const Icon(Icons.save),
+                      label: const Text('Save Restaurant Profile & Settings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- SubView 2: Payment Methods Management ---
+  Widget _buildPaymentMethodsSubView() {
+    final methods = _getPaymentMethods();
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Active Payment Methods (${methods.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
+                const Text('Configures checkout payment options available on the POS cash register', style: TextStyle(fontSize: 13, color: Colors.grey)),
+              ],
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+              onPressed: () => _showAddEditPaymentMethodDialog(),
+              icon: const Icon(Icons.add_card),
+              label: const Text('Add Payment Method'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: methods.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.payment, size: 54, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      const Text('No payment methods configured.', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                        onPressed: () => _showAddEditPaymentMethodDialog(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Payment Method'),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: methods.length,
+                  itemBuilder: (context, index) {
+                    final pm = methods[index];
+                    final name = (pm['paymentMethodsName'] ?? pm['name'] ?? 'Payment Method').toString();
+                    final id = (pm['_id'] ?? pm['id'] ?? '').toString();
+
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.teal.shade100,
+                          child: Icon(Icons.account_balance_wallet, color: Colors.teal.shade800),
+                        ),
+                        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        subtitle: Text('ID: $id | Sync Status: Connected to POS'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _showAddEditPaymentMethodDialog(method: pm, index: index),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                final confirm = await _showDeleteConfirmation('Delete Payment Method', 'Are you sure you want to delete payment method "$name"?');
+                                if (confirm == true) {
+                                  final list = _getPaymentMethods();
+                                  list.removeAt(index);
+                                  setState(() {
+                                    _savePaymentMethods(list);
+                                  });
+                                  _persistChanges();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddEditPaymentMethodDialog({Map<String, dynamic>? method, int? index}) {
+    final nameCtrl = TextEditingController(text: method?['paymentMethodsName'] ?? method?['name'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(method == null ? 'Add Payment Method' : 'Edit Payment Method'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Payment Method Name (e.g. Cash, Credit Card, bKash)',
+                  prefixIcon: Icon(Icons.payment),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+            onPressed: () {
+              if (nameCtrl.text.trim().isNotEmpty) {
+                final idStr = method?['_id'] ?? method?['id'] ?? 'pm_${DateTime.now().millisecondsSinceEpoch}';
+                final newMethod = {
+                  '_id': idStr,
+                  'id': idStr,
+                  'paymentMethodsName': nameCtrl.text.trim(),
+                  'restId': widget.restId,
+                  'createdBy': (method?['createdBy'] ?? 'Admin').toString(),
+                  'updatedBy': 'Admin',
+                  'createdAt': method?['createdAt'] ?? DateTime.now().toIso8601String(),
+                  'updatedAt': DateTime.now().toIso8601String(),
+                  '__v': (method?['__v'] as num?)?.toInt() ?? 0,
+                };
+
+                final list = _getPaymentMethods();
+                setState(() {
+                  if (index != null && index >= 0 && index < list.length) {
+                    list[index] = newMethod;
+                  } else {
+                    list.add(newMethod);
+                  }
+                  _savePaymentMethods(list);
+                });
+                _persistChanges();
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save Method'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- SubView 3: Print Copies Configuration ---
+  Widget _buildPrintCopiesSubView() {
+    final printData = _getPrintCopyData();
+
+    int kAll = (printData['kitchenPrint_all'] as num?)?.toInt() ?? 1;
+    int kNew = (printData['kitchenPrint_new'] as num?)?.toInt() ?? 1;
+    int kBar = (printData['kitchenPrint_barOnly'] as num?)?.toInt() ?? 1;
+    int kKitchen = (printData['kitchenPrint_kitchenOnly'] as num?)?.toInt() ?? 1;
+    int guest = (printData['guestPrint'] as num?)?.toInt() ?? 1;
+    int release = (printData['releasePrint'] as num?)?.toInt() ?? 1;
+
+    return StatefulBuilder(
+      builder: (context, setSubState) {
+        return SingleChildScrollView(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Colors.amber.shade100,
+                            radius: 22,
+                            child: Icon(Icons.print, color: Colors.amber.shade900),
+                          ),
+                          const SizedBox(width: 12),
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Printer Slip Copies Setup', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text('Sets how many receipt/slip copies are automatically printed upon order placement and release', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 32),
+
+                      const Text('Kitchen & Bar Order Slips', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.indigo)),
+                      const SizedBox(height: 12),
+                      _buildPrintCopyRow('Kitchen Print (All Items)', 'Print all ordered food and drink items', kAll, (v) => setSubState(() => kAll = v)),
+                      _buildPrintCopyRow('Kitchen Print (New Items Only)', 'Print only newly added items on order updates', kNew, (v) => setSubState(() => kNew = v)),
+                      _buildPrintCopyRow('Bar Station Slips', 'Print drink orders directed to bar printer', kBar, (v) => setSubState(() => kBar = v)),
+                      _buildPrintCopyRow('Kitchen Station Slips', 'Print food orders directed to kitchen printer', kKitchen, (v) => setSubState(() => kKitchen = v)),
+
+                      const Divider(height: 32),
+                      const Text('Customer Bill & Release Receipts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.indigo)),
+                      const SizedBox(height: 12),
+                      _buildPrintCopyRow('Guest Receipt Copies', 'Printed when customer requests the preliminary bill', guest, (v) => setSubState(() => guest = v)),
+                      _buildPrintCopyRow('Release Bill Copies', 'Final payment receipt printed upon table settlement', release, (v) => setSubState(() => release = v)),
+
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade800, foregroundColor: Colors.white),
+                          onPressed: () {
+                            final updated = {
+                              'kitchenPrint_all': kAll,
+                              'kitchenPrint_new': kNew,
+                              'kitchenPrint_barOnly': kBar,
+                              'kitchenPrint_kitchenOnly': kKitchen,
+                              'guestPrint': guest,
+                              'releasePrint': release,
+                            };
+                            setState(() {
+                              _savePrintCopyData(updated);
+                            });
+                            _persistChanges();
+                          },
+                          icon: const Icon(Icons.save),
+                          label: const Text('Save Print Copies Setup', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPrintCopyRow(String title, String subtitle, int currentValue, ValueChanged<int> onChanged) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              ],
+            ),
+          ),
+          DropdownButton<int>(
+            value: currentValue,
+            items: [1, 2, 3, 4, 5].map((cnt) {
+              return DropdownMenuItem<int>(
+                value: cnt,
+                child: Text('$cnt ${cnt == 1 ? "Copy" : "Copies"}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) onChanged(val);
+            },
+          ),
+        ],
       ),
     );
   }

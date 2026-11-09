@@ -2,8 +2,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:excel/excel.dart' hide Border;
-import 'package:file_picker/file_picker.dart';
 import '../models/order_model.dart';
+import '../utils/file_saver.dart';
 
 class OrderReportsView extends StatefulWidget {
   final List<OrderModel> orders;
@@ -166,13 +166,14 @@ class _OrderReportsViewState extends State<OrderReportsView> {
       var fileBytes = excel.save();
       if (fileBytes != null) {
         String filename = 'FineDine_Report_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.xlsx';
-        String? outputFile = await FilePicker.platform.saveFile(
+        bool success = await FileSaver.saveFile(
           dialogTitle: 'Save FineDine Executive Reports',
           fileName: filename,
           bytes: Uint8List.fromList(fileBytes),
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         );
 
-        if (outputFile != null && mounted) {
+        if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(

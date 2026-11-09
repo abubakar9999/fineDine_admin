@@ -150,27 +150,46 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     }
   }
 
-  // Save settings locally (Minimize automatic Supabase hits)
+  // Save settings and sync to Supabase automatically
   Future<void> _handleSaveSettings(Map<String, dynamic> updatedSettings) async {
     setState(() {
       _settingsData = updatedSettings;
-      _hasUnsavedChanges = true;
+      _hasUnsavedChanges = false;
     });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.edit_note_rounded, color: Colors.white),
-              SizedBox(width: 10),
-              Expanded(child: Text('Settings updated locally. Tap "Upload" to push to Supabase.')),
-            ],
+    try {
+      await _supabaseService.updateSettingsData(_currentRestId, updatedSettings);
+      setState(() {
+        _lastSyncedTime = DateTime.now();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.cloud_done_rounded, color: Colors.white),
+                SizedBox(width: 10),
+                Expanded(child: Text('Settings saved & synced to Supabase successfully!')),
+              ],
+            ),
+            backgroundColor: Color(0xFF10B981),
+            duration: Duration(seconds: 2),
           ),
-          backgroundColor: const Color(0xFFD97706),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Saved locally, but cloud sync pending: $e. Tap Upload to retry.'),
+            backgroundColor: const Color(0xFFD97706),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 

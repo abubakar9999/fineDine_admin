@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/company_login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Warning: .env file not found or failed to load: $e');
+  }
+
+  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? 'https://upzvvmxislzulcrycrkv.supabase.co';
+  final supabaseKey = dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ??
+      dotenv.env['SUPABASE_ANON_KEY'] ??
+      'sb_publishable_95-0GNeelo0SNLp8iCvWdg_lnumWPya';
+
   await Supabase.initialize(
-    url: 'https://upzvvmxislzulcrycrkv.supabase.co',
-    anonKey: 'sb_publishable_95-0GNeelo0SNLp8iCvWdg_lnumWPya',
+    url: supabaseUrl,
+    publishableKey: supabaseKey,
   );
 
   runApp(const MyApp());

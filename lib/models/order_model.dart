@@ -165,8 +165,8 @@ class OrderModel {
     double cost = (json['costAmount'] as num?)?.toDouble() ?? (tot * 0.38);
 
     return OrderModel(
-      id: json['_id'] ?? '',
-      restId: json['restId'] ?? '',
+      id: (json['_id'] ?? json['id'] ?? '').toString(),
+      restId: (json['restId'] ?? json['restaurant_id'] ?? '').toString(),
       sl: slVal,
       orderStatus: status,
       orderType: json['orderType']?.toString() ?? 'DineIn',

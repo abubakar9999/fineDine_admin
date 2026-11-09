@@ -189,7 +189,7 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
                         },
                         secondary: const Icon(Icons.check_circle_outline),
                         contentPadding: EdgeInsets.zero,
-                        activeColor: Theme.of(context).colorScheme.primary,
+                        activeThumbColor: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(height: 32),
                       SizedBox(
