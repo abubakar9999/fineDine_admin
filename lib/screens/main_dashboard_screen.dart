@@ -33,6 +33,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   bool _isLoading = true;
   bool _isUploading = false;
   bool _hasUnsavedChanges = false;
+  bool _isSidebarCollapsed = false;
   DateTime? _lastSyncedTime;
   String? _errorMessage;
 
@@ -130,7 +131,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 children: const [
                   Icon(Icons.info_outline_rounded, color: Colors.white),
                   SizedBox(width: 10),
-                  Text('No existing data found. Starting fresh.'),
+                  Text('No existing data found for outlet. Starting fresh.'),
                 ],
               ),
               backgroundColor: const Color(0xFFD97706),
@@ -241,166 +242,116 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final mediaWidth = MediaQuery.of(context).size.width;
-    final isMobile = mediaWidth < 700;
-    final isVerySmall = mediaWidth < 450;
+  String get _currentTabTitle {
+    switch (_selectedIndex) {
+      case 0:
+        return 'Executive Overview';
+      case 1:
+        return 'Reports & Analytics';
+      case 2:
+        return 'Menu & Store Settings';
+      default:
+        return 'Dashboard';
+    }
+  }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        titleSpacing: isMobile ? 12 : 20,
-        title: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isVerySmall ? 'FineDine' : 'FineDine Admin',
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
-              ),
-              const SizedBox(width: 10),
-              // Outlet selector dropdown
-              if (_companyRestaurants.length > 1) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2FF),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFC7D2FE)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isDense: true,
-                      value: _companyRestaurants.any((r) => r['id']?.toString() == _currentRestId)
-                          ? _currentRestId
-                          : _companyRestaurants.first['id']?.toString(),
-                      icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF4F46E5), size: 18),
-                      style: const TextStyle(
-                        color: Color(0xFF4F46E5),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                      onChanged: (String? newRestId) {
-                        if (newRestId != null && newRestId != _currentRestId) {
-                          setState(() {
-                            _currentRestId = newRestId;
-                          });
-                          _loadBackupData();
-                        }
-                      },
-                      items: _companyRestaurants.map((r) {
-                        final id = r['id']?.toString() ?? '';
-                        final name = r['name'] ?? 'Restaurant #$id';
-                        return DropdownMenuItem<String>(
-                          value: id,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.storefront_rounded, size: 14, color: Color(0xFF4F46E5)),
-                              const SizedBox(width: 6),
-                              Text(isVerySmall ? '#$id' : '$name (ID: #$id)'),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ] else ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2FF),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFC7D2FE)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.storefront_rounded, size: 12, color: Color(0xFF4F46E5)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Outlet #$_currentRestId',
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF4F46E5), fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              if (_hasUnsavedChanges) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFDE68A)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      CircleAvatar(radius: 3, backgroundColor: Color(0xFFD97706)),
-                      SizedBox(width: 4),
-                      Text(
-                        'Unsaved',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFB45309)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.logout_rounded, color: Color(0xFFEF4444)),
+            SizedBox(width: 10),
+            Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
         ),
+        content: const Text('Are you sure you want to sign out of FineDine Admin?'),
         actions: [
-          // Refresh / Sync Down Button
-          IconButton(
-            icon: const Icon(Icons.sync_rounded, color: Color(0xFF4F46E5), size: 22),
-            tooltip: _lastSyncedTime != null ? 'Refresh from Supabase (Synced ${timeFormatter.format(_lastSyncedTime!)})' : 'Refresh from Supabase',
-            onPressed: () => _loadBackupData(),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
           ),
-          // Upload / Sync Up Button
-          IconButton(
-            icon: _isUploading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
-                  )
-                : Icon(
-                    Icons.cloud_upload_rounded,
-                    color: _hasUnsavedChanges ? const Color(0xFFD97706) : const Color(0xFF10B981),
-                    size: 22,
-                  ),
-            tooltip: _hasUnsavedChanges ? 'Upload Unsaved Changes to Supabase' : 'Upload Data to Supabase',
-            onPressed: _uploadDataToSupabase,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B), size: 20),
-            tooltip: 'Sign Out',
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
+              Navigator.pop(context);
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const CompanyLoginScreen()),
               );
             },
+            child: const Text('Sign Out'),
           ),
-          SizedBox(width: isMobile ? 4 : 10),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaWidth = MediaQuery.of(context).size.width;
+    final isMobile = mediaWidth < 800;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      // Mobile Top AppBar
+      appBar: isMobile
+          ? AppBar(
+              titleSpacing: 16,
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    _currentTabTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
+                  ),
+                ],
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded, color: Color(0xFF4F46E5), size: 22),
+                  tooltip: 'Refresh',
+                  onPressed: () => _loadBackupData(),
+                ),
+                IconButton(
+                  icon: _isUploading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
+                        )
+                      : Icon(
+                          Icons.cloud_upload_rounded,
+                          color: _hasUnsavedChanges ? const Color(0xFFD97706) : const Color(0xFF10B981),
+                          size: 22,
+                        ),
+                  tooltip: 'Sync Up',
+                  onPressed: _uploadDataToSupabase,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B), size: 20),
+                  tooltip: 'Sign Out',
+                  onPressed: _showLogoutDialog,
+                ),
+                const SizedBox(width: 8),
+              ],
+            )
+          : null,
       bottomNavigationBar: isMobile
           ? NavigationBar(
               selectedIndex: _selectedIndex,
@@ -418,13 +369,13 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                   label: 'Dashboard',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  selectedIcon: Icon(Icons.receipt_long_rounded, color: Color(0xFF4F46E5)),
+                  icon: Icon(Icons.bar_chart_rounded),
+                  selectedIcon: Icon(Icons.bar_chart_rounded, color: Color(0xFF4F46E5)),
                   label: 'Reports',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.settings_outlined),
-                  selectedIcon: Icon(Icons.settings_rounded, color: Color(0xFF4F46E5)),
+                  icon: Icon(Icons.tune_rounded),
+                  selectedIcon: Icon(Icons.tune_rounded, color: Color(0xFF4F46E5)),
                   label: 'Settings',
                 ),
               ],
@@ -432,97 +383,597 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
           : null,
       body: Row(
         children: [
-          if (!isMobile) ...[
-            NavigationRail(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (int index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              labelType: NavigationRailLabelType.all,
-              leading: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2FF),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFC7D2FE)),
-                  ),
-                  child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF4F46E5), size: 22),
-                ),
-              ),
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  selectedIcon: Icon(Icons.dashboard_rounded),
-                  label: Text('Dashboard'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  selectedIcon: Icon(Icons.receipt_long_rounded),
-                  label: Text('Reports'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.settings_outlined),
-                  selectedIcon: Icon(Icons.settings_rounded),
-                  label: Text('Settings'),
+          // Desktop Modern SaaS Collapsible Sidebar
+          if (!isMobile) _buildModernSidebar(),
+
+          // Main Screen Content Area
+          Expanded(
+            child: Column(
+              children: [
+                // Desktop Header Bar with Breadcrumbs & Sync Controls
+                if (!isMobile) _buildDesktopHeaderBar(),
+
+                // Content View
+                Expanded(
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+                        )
+                      : _errorMessage != null
+                          ? Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(32),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFFFCA5A5)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withValues(alpha: 0.05),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.error_outline_rounded, size: 48, color: Color(0xFFEF4444)),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _loadBackupData(),
+                                      icon: const Icon(Icons.refresh_rounded),
+                                      label: const Text('Retry Connection'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : IndexedStack(
+                              index: _selectedIndex,
+                              children: [
+                                DashboardView(
+                                  orders: _orders,
+                                  settingsData: _settingsData,
+                                  onRefresh: () => _loadBackupData(),
+                                  onNavigateTab: (tabIndex) {
+                                    setState(() {
+                                      _selectedIndex = tabIndex;
+                                    });
+                                  },
+                                ),
+                                OrderReportsView(
+                                  orders: _orders,
+                                  onRefresh: () => _loadBackupData(),
+                                ),
+                                SettingsView(
+                                  settingsData: _settingsData,
+                                  restId: _currentRestId,
+                                  onSaveSettings: _handleSaveSettings,
+                                ),
+                              ],
+                            ),
                 ),
               ],
             ),
-            const VerticalDivider(thickness: 1, width: 1, color: Color(0xFFE2E8F0)),
-          ],
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
-                  )
-                : _errorMessage != null
-                    ? Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFFCA5A5)),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.error_outline_rounded, size: 48, color: Color(0xFFEF4444)),
-                              const SizedBox(height: 16),
-                              Text(_errorMessage!, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                onPressed: () => _loadBackupData(),
-                                icon: const Icon(Icons.refresh_rounded),
-                                label: const Text('Retry Connection'),
-                              ),
-                            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- MODERN SAAS COLLAPSIBLE SIDEBAR ---
+  Widget _buildModernSidebar() {
+    final double sidebarWidth = _isSidebarCollapsed ? 80 : 260;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeInOutCubic,
+      width: sidebarWidth,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(
+          right: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+            blurRadius: 16,
+            offset: const Offset(4, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sidebar Top Brand Emblem
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 22),
+                ),
+                if (!_isSidebarCollapsed) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'FineDine',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A),
+                            letterSpacing: -0.5,
                           ),
                         ),
-                      )
-                    : IndexedStack(
-                        index: _selectedIndex,
-                        children: [
-                          DashboardView(
-                            orders: _orders,
-                            settingsData: _settingsData,
-                            onRefresh: () => _loadBackupData(),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'CLOUD PRO',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF4F46E5),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                IconButton(
+                  icon: Icon(
+                    _isSidebarCollapsed ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
+                    color: const Color(0xFF94A3B8),
+                    size: 20,
+                  ),
+                  tooltip: _isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar',
+                  onPressed: () {
+                    setState(() {
+                      _isSidebarCollapsed = !_isSidebarCollapsed;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 12),
+
+          // Outlet Switcher Widget inside sidebar
+          if (!_isSidebarCollapsed) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
+                        SizedBox(width: 6),
+                        Text(
+                          'ACTIVE OUTLET',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF64748B),
+                            letterSpacing: 0.8,
                           ),
-                          OrderReportsView(
-                            orders: _orders,
-                            onRefresh: () => _loadBackupData(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    if (_companyRestaurants.length > 1) ...[
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          isDense: true,
+                          value: _companyRestaurants.any((r) => r['id']?.toString() == _currentRestId)
+                              ? _currentRestId
+                              : _companyRestaurants.first['id']?.toString(),
+                          icon: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF4F46E5), size: 18),
+                          style: const TextStyle(
+                            color: Color(0xFF0F172A),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
                           ),
-                          SettingsView(
-                            settingsData: _settingsData,
-                            restId: _currentRestId,
-                            onSaveSettings: _handleSaveSettings,
-                          ),
-                        ],
+                          onChanged: (String? newRestId) {
+                            if (newRestId != null && newRestId != _currentRestId) {
+                              setState(() {
+                                _currentRestId = newRestId;
+                              });
+                              _loadBackupData();
+                            }
+                          },
+                          items: _companyRestaurants.map((r) {
+                            final id = r['id']?.toString() ?? '';
+                            final name = r['name'] ?? 'Restaurant #$id';
+                            return DropdownMenuItem<String>(
+                              value: id,
+                              child: Text(
+                                '$name (#$id)',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
+                    ] else ...[
+                      Text(
+                        'Store #$_currentRestId',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Navigation Section Label
+          if (!_isSidebarCollapsed)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+              child: Text(
+                'MAIN MENU',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF94A3B8),
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+
+          // Navigation Items
+          _buildSidebarNavItem(
+            index: 0,
+            title: 'Dashboard',
+            icon: Icons.dashboard_rounded,
+            badgeText: 'Live',
+            badgeColor: const Color(0xFF10B981),
+          ),
+          _buildSidebarNavItem(
+            index: 1,
+            title: 'Reports & Analytics',
+            icon: Icons.bar_chart_rounded,
+            badgeText: _orders.isNotEmpty ? '${_orders.length}' : null,
+            badgeColor: const Color(0xFF4F46E5),
+          ),
+          _buildSidebarNavItem(
+            index: 2,
+            title: 'Menu & Settings',
+            icon: Icons.tune_rounded,
+          ),
+
+          const Spacer(),
+
+          // Live Cloud Sync Status Widget
+          if (!_isSidebarCollapsed) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _hasUnsavedChanges ? const Color(0xFFFEF3C7) : const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: _hasUnsavedChanges ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 4,
+                          backgroundColor: _hasUnsavedChanges ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _hasUnsavedChanges ? 'Unsaved Local Data' : 'Supabase Cloud Live',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: _hasUnsavedChanges ? const Color(0xFF92400E) : const Color(0xFF166534),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _lastSyncedTime != null ? 'Synced ${timeFormatter.format(_lastSyncedTime!)}' : 'Connecting...',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _hasUnsavedChanges ? const Color(0xFFB45309) : const Color(0xFF15803D),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+          // User Profile Strip at Bottom
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4F46E5).withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'A',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                    ),
+                  ),
+                ),
+                if (!_isSidebarCollapsed) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Store Admin',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'ID #$_currentRestId',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.logout_rounded, color: Color(0xFF94A3B8), size: 18),
+                    tooltip: 'Sign Out',
+                    onPressed: _showLogoutDialog,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarNavItem({
+    required int index,
+    required String title,
+    required IconData icon,
+    String? badgeText,
+    Color? badgeColor,
+  }) {
+    final bool isSelected = _selectedIndex == index;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: _isSidebarCollapsed ? 12 : 14,
+            vertical: 12,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFEEF2FF) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: _isSidebarCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFF64748B),
+              ),
+              if (!_isSidebarCollapsed) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFF334155),
+                    ),
+                  ),
+                ),
+                if (badgeText != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (badgeColor ?? const Color(0xFF4F46E5)).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      badgeText,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: badgeColor ?? const Color(0xFF4F46E5),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- DESKTOP TOP HEADER BAR ---
+  Widget _buildDesktopHeaderBar() {
+    return Container(
+      height: 68,
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Breadcrumbs
+          Row(
+            children: [
+              const Icon(Icons.storefront_rounded, size: 18, color: Color(0xFF94A3B8)),
+              const SizedBox(width: 8),
+              const Text(
+                'FineDine Cloud',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text('/', style: TextStyle(fontSize: 14, color: Color(0xFFCBD5E1))),
+              ),
+              Text(
+                _currentTabTitle,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              ),
+            ],
+          ),
+
+          // Header Right Controls
+          Row(
+            children: [
+              // Live Sync Status Chip
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _hasUnsavedChanges ? const Color(0xFFFEF3C7) : const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _hasUnsavedChanges ? const Color(0xFFFDE68A) : const Color(0xFFA7F3D0),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 3.5,
+                      backgroundColor: _hasUnsavedChanges ? const Color(0xFFD97706) : const Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _hasUnsavedChanges ? 'Pending Upload' : 'Supabase Synced',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _hasUnsavedChanges ? const Color(0xFF92400E) : const Color(0xFF065F46),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Sync Down / Refresh Button
+              OutlinedButton.icon(
+                onPressed: () => _loadBackupData(),
+                icon: const Icon(Icons.sync_rounded, size: 16),
+                label: const Text('Sync Down'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // Sync Up / Upload Button
+              ElevatedButton.icon(
+                onPressed: _uploadDataToSupabase,
+                icon: _isUploading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.cloud_upload_rounded, size: 16),
+                label: Text(_isUploading ? 'Uploading...' : 'Sync Up'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _hasUnsavedChanges ? const Color(0xFFD97706) : const Color(0xFF10B981),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+            ],
           ),
         ],
       ),

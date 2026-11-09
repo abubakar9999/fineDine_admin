@@ -340,109 +340,181 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     );
   }
 
+  Widget _buildSegmentedTab({
+    required IconData icon,
+    required String title,
+    String? count,
+  }) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 8),
+          Text(title),
+          if (count != null) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                count,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF475569),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaWidth = MediaQuery.of(context).size.width;
-    final isMobile = mediaWidth < 600;
+    final isMobile = mediaWidth < 650;
 
     return Padding(
-      padding: EdgeInsets.all(isMobile ? 14.0 : 24.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 14.0 : 26.0,
+        vertical: isMobile ? 14.0 : 20.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isMobile) ...[
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Settings & Menu',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.indigo.shade900,
-                        ),
-                      ),
-                    ),
-                    if (_isSaving) ...[
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2.0),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text('Saving...', style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, fontSize: 12)),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Manage Items, Categories, Tables, Staff & Offers',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                ),
-              ],
-            ),
-          ] else ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
+          // Header Bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Settings & Menu Management',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.indigo.shade900,
-                          ),
+                      style: TextStyle(
+                        fontSize: isMobile ? 20 : 24,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
-                      'Manage Food Items, Categories, Cuisines, Tags, Portions, Tables & Areas',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                      'Configure food menu items, portions, seating tables, staff and store parameters',
+                      style: TextStyle(color: Colors.blueGrey.shade600, fontSize: isMobile ? 12 : 13),
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    if (_isSaving) ...[
-                      const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              if (_isSaving) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFC7D2FE)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4F46E5)),
                       ),
-                      const SizedBox(width: 8),
-                      const Text('Saving...', style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Syncing Cloud...',
+                        style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
                     ],
-                  ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Modern Pill Segmented TabBar
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: const Color(0xFF4F46E5),
+              unselectedLabelColor: const Color(0xFF64748B),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              indicator: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              tabs: [
+                _buildSegmentedTab(
+                  icon: Icons.restaurant_menu_rounded,
+                  title: 'Food Items',
+                  count: '${_getItems().length}',
+                ),
+                _buildSegmentedTab(
+                  icon: Icons.category_rounded,
+                  title: 'Categories & Cuisines',
+                  count: '${_getCategories().length + _getCuisines().length + _getTags().length}',
+                ),
+                _buildSegmentedTab(
+                  icon: Icons.table_restaurant_rounded,
+                  title: 'Tables & Areas',
+                  count: '${_getTables().length + _getAreas().length}',
+                ),
+                _buildSegmentedTab(
+                  icon: Icons.groups_rounded,
+                  title: 'Staff & Tills',
+                  count: '${_getStaff().length + _getTills().length}',
+                ),
+                _buildSegmentedTab(
+                  icon: Icons.local_offer_rounded,
+                  title: 'Promotions',
+                  count: '${_getPromotions().length}',
+                ),
+                _buildSegmentedTab(
+                  icon: Icons.inventory_2_rounded,
+                  title: 'Stock Levels',
+                  count: '${_getStocks().length}',
+                ),
+                _buildSegmentedTab(
+                  icon: Icons.account_balance_wallet_rounded,
+                  title: 'Expenses',
+                  count: '${_getExpenseItems().length}',
+                ),
+                _buildSegmentedTab(
+                  icon: Icons.tune_rounded,
+                  title: 'Restaurant Profile',
                 ),
               ],
             ),
-          ],
-          SizedBox(height: isMobile ? 10 : 16),
-          TabBar(
-            controller: _tabController,
-            labelColor: Colors.indigo,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.indigo,
-            indicatorWeight: 3,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: const [
-              Tab(icon: Icon(Icons.restaurant_menu), text: 'Food Items'),
-              Tab(icon: Icon(Icons.category), text: 'Categories, Cuisines & Tags'),
-              Tab(icon: Icon(Icons.table_restaurant), text: 'Tables & Areas'),
-              Tab(icon: Icon(Icons.people), text: 'Staff & Tills'),
-              Tab(icon: Icon(Icons.local_offer), text: 'Promotions & Offers'),
-              Tab(icon: Icon(Icons.inventory_2_rounded), text: 'Stock Management'),
-              Tab(icon: Icon(Icons.account_balance_wallet_rounded), text: 'Expense Management'),
-              Tab(icon: Icon(Icons.tune_rounded), text: 'Restaurant & System Settings'),
-            ],
           ),
-          SizedBox(height: isMobile ? 10 : 16),
+          const SizedBox(height: 16),
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -484,112 +556,169 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search food items by name...',
-                  prefixIcon: const Icon(Icons.search),
-                  isDense: true,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        // Modern Toolbar Container
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search food items by name...',
+                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8), size: 20),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
+                    ),
+                  ),
+                  onChanged: (val) => setState(() => _itemSearchQuery = val),
                 ),
-                onChanged: (val) => setState(() => _itemSearchQuery = val),
               ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade400),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: categoryNames.contains(_selectedCategoryFilter) ? _selectedCategoryFilter : 'All',
-                  icon: const Icon(Icons.filter_alt, size: 20),
-                  onChanged: (val) {
-                    if (val != null) setState(() => _selectedCategoryFilter = val);
-                  },
-                  items: categoryNames.map((c) {
-                    return DropdownMenuItem<String>(
-                      value: c,
-                      child: Text(c == 'All' ? 'All Categories' : c),
-                    );
-                  }).toList(),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: categoryNames.contains(_selectedCategoryFilter) ? _selectedCategoryFilter : 'All',
+                    icon: const Icon(Icons.filter_list_rounded, size: 18, color: Color(0xFF64748B)),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B)),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedCategoryFilter = val);
+                    },
+                    items: categoryNames.map((c) {
+                      return DropdownMenuItem<String>(
+                        value: c,
+                        child: Text(c == 'All' ? 'All Categories' : c),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.teal.shade700,
-                side: BorderSide(color: Colors.teal.shade300),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F766E),
+                  side: const BorderSide(color: Color(0xFF99F6E4)),
+                  backgroundColor: const Color(0xFFF0FDFA),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _downloadExcelTemplate,
+                icon: const Icon(Icons.download_rounded, size: 16),
+                label: const Text('Template', style: TextStyle(fontSize: 13)),
               ),
-              onPressed: _downloadExcelTemplate,
-              icon: const Icon(Icons.download, size: 18),
-              label: const Text('Template'),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.blue.shade700,
-                side: BorderSide(color: Colors.blue.shade300),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF0369A1),
+                  side: const BorderSide(color: Color(0xFFBAE6FD)),
+                  backgroundColor: const Color(0xFFF0F9FF),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _exportFoodItemsToCsv,
+                icon: const Icon(Icons.file_download_outlined, size: 16),
+                label: const Text('Export CSV', style: TextStyle(fontSize: 13)),
               ),
-              onPressed: _exportFoodItemsToCsv,
-              icon: const Icon(Icons.file_download_outlined, size: 18),
-              label: const Text('Export CSV'),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade700,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                onPressed: _importFoodItemsFromExcel,
+                icon: const Icon(Icons.upload_file_rounded, size: 17),
+                label: const Text('Import CSV', style: TextStyle(fontSize: 13)),
               ),
-              onPressed: _importFoodItemsFromExcel,
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Import Excel/CSV'),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F46E5),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                onPressed: () => _showFoodItemDialog(),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text('Create Item (${allItems.length})', style: const TextStyle(fontSize: 13)),
               ),
-              onPressed: () => _showFoodItemDialog(),
-              icon: const Icon(Icons.add),
-              label: Text('Create Item (${allItems.length})'),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Expanded(
           child: filteredItems.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.fastfood_outlined, size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 8),
-                      Text(
-                        _itemSearchQuery.isNotEmpty || _selectedCategoryFilter != 'All'
-                            ? 'No food items match your filter.'
-                            : 'No food items added yet.',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 16),
-                      if (_itemSearchQuery.isEmpty && _selectedCategoryFilter == 'All')
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-                          onPressed: () => _showFoodItemDialog(),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Food Item'),
+                  child: Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.restaurant_rounded, size: 36, color: Color(0xFF94A3B8)),
                         ),
-                    ],
+                        const SizedBox(height: 16),
+                        Text(
+                          _itemSearchQuery.isNotEmpty || _selectedCategoryFilter != 'All'
+                              ? 'No food items match your filter.'
+                              : 'No food items added yet.',
+                          style: const TextStyle(color: Color(0xFF475569), fontWeight: FontWeight.w600, fontSize: 15),
+                        ),
+                        const SizedBox(height: 16),
+                        if (_itemSearchQuery.isEmpty && _selectedCategoryFilter == 'All')
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4F46E5),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => _showFoodItemDialog(),
+                            icon: const Icon(Icons.add_rounded),
+                            label: const Text('Add First Food Item'),
+                          ),
+                      ],
+                    ),
                   ),
                 )
               : ListView.builder(
@@ -606,40 +735,80 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
                     final originalIndex = allItems.indexWhere((element) => (element['_id'] ?? element['id']) == id);
 
-                    return Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
                       child: Padding(
-                        padding: const EdgeInsets.all(12.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: Colors.orange.shade100,
-                                  child: Icon(Icons.fastfood, color: Colors.orange.shade800, size: 20),
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFFC7D2FE)),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(Icons.restaurant_rounded, color: Color(0xFF4F46E5), size: 20),
+                                  ),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                      if (item['shortName'] != null && item['shortName'].toString().isNotEmpty)
-                                        Text('Code: ${item['shortName']}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
+                                          ),
+                                          if (item['shortName'] != null && item['shortName'].toString().isNotEmpty) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFF1F5F9),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                '#${item['shortName']}',
+                                                style: const TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  icon: const Icon(Icons.edit_rounded, color: Color(0xFF4F46E5), size: 20),
                                   tooltip: 'Edit Item',
                                   onPressed: () => _showFoodItemDialog(item: item, index: originalIndex >= 0 ? originalIndex : index),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 20),
                                   tooltip: 'Delete Item',
                                   onPressed: () async {
                                     final confirm = await _showDeleteConfirmation(
@@ -662,21 +831,51 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                ...catNames.map((c) => _buildBadge(c, Colors.indigo)),
-                                ...cuisineNames.map((c) => _buildBadge(c, Colors.teal)),
-                                ...tagNames.map((t) => _buildBadge(t, Colors.deepOrange)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Portions: ${portions.length} ${portions.isNotEmpty ? "(${portions.map((p) => "${p['portionName'] ?? ''}: ৳${p['portionPriceDineIn'] ?? p['portionPrice'] ?? 0}").join(', ')})" : ""}',
-                              style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                            ),
+                            if (catNames.isNotEmpty || cuisineNames.isNotEmpty || tagNames.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  ...catNames.map((c) => _buildBadge(c, const Color(0xFF4F46E5))),
+                                  ...cuisineNames.map((c) => _buildBadge(c, const Color(0xFF059669))),
+                                  ...tagNames.map((t) => _buildBadge(t, const Color(0xFFD97706))),
+                                ],
+                              ),
+                            ],
+                            if (portions.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: portions.map<Widget>((p) {
+                                  final pName = (p['portionName'] ?? 'Regular').toString();
+                                  final pPrice = p['portionPriceDineIn'] ?? p['portionPrice'] ?? 0;
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          pName,
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '৳$pPrice',
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -688,17 +887,17 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildBadge(String label, MaterialColor color) {
+  Widget _buildBadge(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
-        color: color.shade50,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.shade200),
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, color: color.shade800, fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w700),
       ),
     );
   }

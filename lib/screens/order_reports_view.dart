@@ -352,42 +352,63 @@ class _OrderReportsViewState extends State<OrderReportsView> {
       {'id': 7, 'name': 'Peak Hours', 'icon': Icons.access_time_filled_rounded},
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: tabs.map((tab) {
-          final int id = tab['id'] as int;
-          final bool isSelected = _selectedTab == id;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              avatar: Icon(
-                tab['icon'] as IconData,
-                size: 15,
-                color: isSelected ? Colors.white : const Color(0xFF4F46E5),
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: tabs.map((tab) {
+            final int id = tab['id'] as int;
+            final bool isSelected = _selectedTab == id;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+              child: InkWell(
+                onTap: () => setState(() => _selectedTab = id),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        tab['icon'] as IconData,
+                        size: 16,
+                        color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        tab['name'] as String,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFF475569),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              label: Text(tab['name'] as String),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() => _selectedTab = id);
-                }
-              },
-              selectedColor: const Color(0xFF4F46E5),
-              backgroundColor: Colors.white,
-              labelStyle: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : const Color(0xFF334155),
-              ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              side: BorderSide(
-                color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
