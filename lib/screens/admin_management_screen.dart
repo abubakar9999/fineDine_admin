@@ -45,8 +45,8 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
           {'id': '2', 'company_id': 'bistro', 'name': 'Bistro Cafe Holdings', 'password': '1234'},
         ];
         _restaurants = [
-          {'id': '1001', 'name': 'Spice Garden Main Branch', 'company_id': 'spice', 'mobile': '+1 234-567-890'},
-          {'id': '1002', 'name': 'Spice & Grill Express', 'company_id': 'spice', 'mobile': '+1 987-654-321'},
+          {'id': '1001', 'name': 'Spice Garden Main Branch', 'company_id': 'spice', 'mobile': '+1 234-567-890', 'manage_table': true},
+          {'id': '1002', 'name': 'Spice & Grill Express', 'company_id': 'spice', 'mobile': '+1 987-654-321', 'manage_table': true},
         ];
       });
     } finally {
@@ -284,6 +284,8 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
                           itemCount: _restaurants.length,
                           itemBuilder: (context, index) {
                             final r = _restaurants[index];
+                            final bool manageTable = r['manage_table'] ?? true;
+
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               decoration: BoxDecoration(
@@ -299,7 +301,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
                                 ],
                               ),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                 leading: Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
@@ -308,17 +310,91 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> with Sing
                                   ),
                                   child: const Icon(Icons.storefront_rounded, color: Color(0xFFD97706), size: 24),
                                 ),
-                                title: Text(r['name'] ?? 'Restaurant', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
-                                subtitle: Text('Outlet ID: #${r['id']} • Company ID: ${r['company_id'] ?? 'Unassigned'}', style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.edit_rounded, color: Color(0xFF4F46E5)),
-                                  onPressed: () async {
-                                    final res = await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => RestaurantFormScreen(restaurant: r)),
-                                    );
-                                    if (res == true) _loadData();
-                                  },
+                                title: Row(
+                                  children: [
+                                    Text(
+                                      r['name'] ?? 'Restaurant',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: manageTable ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: manageTable ? const Color(0xFFA7F3D0) : const Color(0xFFCBD5E1)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            manageTable ? Icons.table_restaurant_rounded : Icons.point_of_sale_rounded,
+                                            size: 13,
+                                            color: manageTable ? const Color(0xFF059669) : const Color(0xFF64748B),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            manageTable ? 'Tables: ON' : 'Counter Mode',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: manageTable ? const Color(0xFF065F46) : const Color(0xFF475569),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    'Outlet ID: #${r['id']} • Company: ${r['company_id'] ?? 'Unassigned'} • ${manageTable ? "Floor Tables Active" : "Direct Fast-Order Mode"}',
+                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                                  ),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Tooltip(
+                                      message: manageTable ? 'Turn Table Management OFF' : 'Turn Table Management ON',
+                                      child: Switch(
+                                        value: manageTable,
+                                        activeColor: const Color(0xFF4F46E5),
+                                        onChanged: (newVal) async {
+                                          setState(() {
+                                            r['manage_table'] = newVal;
+                                          });
+                                          try {
+                                            await _supabase.from('restaurants').update({'manage_table': newVal}).eq('id', r['id']);
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('${r['name']}: Table Management turned ${newVal ? "ON" : "OFF"}'),
+                                                  backgroundColor: newVal ? const Color(0xFF10B981) : const Color(0xFF64748B),
+                                                  duration: const Duration(seconds: 2),
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            _loadData();
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_rounded, color: Color(0xFF4F46E5)),
+                                      tooltip: 'Edit Restaurant',
+                                      onPressed: () async {
+                                        final res = await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => RestaurantFormScreen(restaurant: r)),
+                                        );
+                                        if (res == true) _loadData();
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
                             );

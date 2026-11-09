@@ -25,6 +25,7 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
 
   bool _isLoading = false;
   bool _isActive = true;
+  bool _manageTable = true;
   bool get _isEditMode => widget.restaurant != null;
 
   @override
@@ -43,6 +44,7 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
       _tokenController.text = r['token'] ?? '';
       _companyIdController.text = r['company_id'] ?? 'spice';
       _isActive = r['is_active'] ?? true;
+      _manageTable = r['manage_table'] ?? true;
     }
   }
 
@@ -83,6 +85,7 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
         'token': _tokenController.text.trim(),
         'company_id': _companyIdController.text.trim().toLowerCase(),
         'is_active': _isActive,
+        'manage_table': _manageTable,
         'updated_at': DateTime.now().toIso8601String(),
       };
 
@@ -177,19 +180,109 @@ class _RestaurantFormScreenState extends State<RestaurantFormScreen> {
                       _buildTextField(controller: _tokenController, label: 'Token', icon: Icons.vpn_key, validator: (value) => value == null || value.isEmpty ? 'Required' : null),
                       const SizedBox(height: 16),
                       _buildTextField(controller: _companyIdController, label: 'Company ID (e.g. spice)', icon: Icons.apartment, validator: (value) => value == null || value.isEmpty ? 'Required' : null),
-                      const SizedBox(height: 16),
-                      SwitchListTile(
-                        title: const Text('Is Active', style: TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: const Text('Allow this restaurant to be active.'),
-                        value: _isActive,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _isActive = value;
-                          });
-                        },
-                        secondary: const Icon(Icons.check_circle_outline),
-                        contentPadding: EdgeInsets.zero,
-                        activeThumbColor: Theme.of(context).colorScheme.primary,
+                      const SizedBox(height: 18),
+                      // Table Management Switch Card
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _manageTable ? const Color(0xFFEEF2FF) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _manageTable ? const Color(0xFFC7D2FE) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: SwitchListTile(
+                          title: Row(
+                            children: [
+                              const Text('Table Management (manage_table)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _manageTable ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  _manageTable ? 'ON' : 'OFF',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Text(
+                            _manageTable
+                                ? 'Enabled: POS allows assigning tables, floor plans & guest seating'
+                                : 'Disabled: POS operates in direct counter / fast takeaway mode without tables',
+                            style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade600),
+                          ),
+                          value: _manageTable,
+                          onChanged: (bool value) {
+                            setState(() {
+                              _manageTable = value;
+                            });
+                          },
+                          secondary: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _manageTable ? const Color(0xFF4F46E5) : const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.table_restaurant_rounded, color: Colors.white, size: 20),
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          activeColor: const Color(0xFF4F46E5),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Is Active Switch Card
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _isActive ? const Color(0xFFECFDF5) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _isActive ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: SwitchListTile(
+                          title: Row(
+                            children: [
+                              const Text('Restaurant Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  _isActive ? 'ACTIVE' : 'INACTIVE',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Text(
+                            _isActive ? 'Outlet is active and accessible' : 'Outlet is suspended/hidden',
+                            style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade600),
+                          ),
+                          value: _isActive,
+                          onChanged: (bool value) {
+                            setState(() {
+                              _isActive = value;
+                            });
+                          },
+                          secondary: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _isActive ? const Color(0xFF10B981) : const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          activeColor: const Color(0xFF10B981),
+                        ),
                       ),
                       const SizedBox(height: 32),
                       SizedBox(

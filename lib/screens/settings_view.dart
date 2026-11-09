@@ -46,6 +46,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
   String _selectedExpenseGroupFilter = 'All';
 
   int _systemSettingsSubTab = 0; // 0: Restaurant Profile & VAT, 1: Payment Methods, 2: Print Setup
+  bool _manageTable = true;
 
   @override
   void initState() {
@@ -64,6 +65,9 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
   void _normalizeSettingsKeys() {
     _localSettings = SupabaseService.sanitizeSettingsData(widget.restId, _localSettings);
+    if (_localSettings.containsKey('manage_table')) {
+      _manageTable = _localSettings['manage_table'] == true;
+    }
 
     final items = _getItems();
     final categories = _getCategories();
@@ -5125,6 +5129,61 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                   ),
                   const Divider(height: 32),
 
+                  // Table Management (manage_table) Setting Card
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _manageTable ? const Color(0xFFEEF2FF) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _manageTable ? const Color(0xFFC7D2FE) : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: SwitchListTile(
+                      title: Row(
+                        children: [
+                          const Text('Table Management (manage_table)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _manageTable ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              _manageTable ? 'TABLES ACTIVE' : 'COUNTER FAST-ORDER',
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        _manageTable
+                            ? 'Enabled: POS allows table ordering, floor layout & guest seating for Dine-In'
+                            : 'Disabled: POS runs in direct fast-order counter mode without table selection',
+                        style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade600),
+                      ),
+                      value: _manageTable,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _manageTable = value;
+                          _localSettings['manage_table'] = value;
+                        });
+                      },
+                      secondary: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _manageTable ? const Color(0xFF4F46E5) : const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.table_restaurant_rounded, color: Colors.white, size: 20),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: const Color(0xFF4F46E5),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
                   const Text('Restaurant Identity & Tax', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.indigo)),
                   const SizedBox(height: 12),
                   Row(
@@ -5262,6 +5321,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                         updated['tillId'] = (basic['tillId'] ?? '').toString();
                         updated['androidId'] = (basic['androidId'] ?? '').toString();
                         updated['deliveryAndBag'] = basic['deliveryAndBag'] is Map ? basic['deliveryAndBag'] : {'delivery': [], 'bag': []};
+                        updated['manage_table'] = _manageTable;
+                        _localSettings['manage_table'] = _manageTable;
 
                         setState(() {
                           _saveBasicSetting(updated);

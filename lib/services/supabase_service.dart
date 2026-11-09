@@ -789,6 +789,23 @@ class SupabaseService {
         rethrow;
       }
     }
+
+    // Also sync to restaurants table (settings_data & manage_table) for POS live compatibility
+    try {
+      final Map<String, dynamic> restUpdate = {
+        'settings_data': cleanSettings,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      if (updatedSettings.containsKey('manage_table')) {
+        restUpdate['manage_table'] = updatedSettings['manage_table'] == true;
+      }
+      final numId = int.tryParse(restId);
+      if (numId != null) {
+        await _supabase.from('restaurants').update(restUpdate).eq('id', numId);
+      } else {
+        await _supabase.from('restaurants').update(restUpdate).or('id.eq.$restId,token.eq.$restId');
+      }
+    } catch (_) {}
   }
 
   // Save updated orders_data back to Supabase
