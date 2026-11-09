@@ -736,6 +736,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                     final List cuisineNames = _getItemCuisineNames(item);
                     final List tagNames = _getItemTagNames(item);
                     final List portions = item['portions'] is List ? item['portions'] : [];
+                    final String readyFor = (item['ready_for'] ?? item['readyFor'] ?? 'kitchen').toString().toLowerCase();
+                    final bool stickerEnabled = (item['sticker_enable'] ?? item['stickerEnable'] ?? false) == true;
 
                     final originalIndex = allItems.indexWhere((element) => (element['_id'] ?? element['id']) == id);
 
@@ -835,12 +837,15 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                                 ),
                               ],
                             ),
-                            if (catNames.isNotEmpty || cuisineNames.isNotEmpty || tagNames.isNotEmpty) ...[
+                            if (catNames.isNotEmpty || cuisineNames.isNotEmpty || tagNames.isNotEmpty || readyFor.isNotEmpty || stickerEnabled) ...[
                               const SizedBox(height: 10),
                               Wrap(
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: [
+                                  _buildStationBadge(readyFor),
+                                  if (stickerEnabled)
+                                    _buildBadge('Sticker Enabled', const Color(0xFF059669), icon: Icons.loyalty_rounded),
                                   ...catNames.map((c) => _buildBadge(c, const Color(0xFF4F46E5))),
                                   ...cuisineNames.map((c) => _buildBadge(c, const Color(0xFF059669))),
                                   ...tagNames.map((t) => _buildBadge(t, const Color(0xFFD97706))),
@@ -891,7 +896,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildBadge(String label, Color color) {
+  Widget _buildBadge(String label, Color color, {IconData? icon}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
@@ -899,9 +904,89 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w700),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStationBadge(String readyFor) {
+    Color color;
+    IconData icon;
+    String label;
+    switch (readyFor.toLowerCase().trim()) {
+      case 'bar':
+        color = const Color(0xFF7C3AED);
+        icon = Icons.local_bar_rounded;
+        label = 'Bar Station';
+        break;
+      case 'hot_kitchen':
+      case 'hot kitchen':
+        color = const Color(0xFFDC2626);
+        icon = Icons.local_fire_department_rounded;
+        label = 'Hot Kitchen';
+        break;
+      case 'readymade':
+      case 'ready made':
+        color = const Color(0xFF0D9488);
+        icon = Icons.takeout_dining_rounded;
+        label = 'Readymade';
+        break;
+      case 'kitchen':
+      default:
+        color = const Color(0xFFEA580C);
+        icon = Icons.restaurant_rounded;
+        label = 'Kitchen';
+        break;
+    }
+    return _buildBadge(label, color, icon: icon);
+  }
+
+  Widget _buildStationChip(String key, String label, IconData icon, Color color, String currentSelected, ValueChanged<String> onSelected) {
+    final isSelected = currentSelected == key;
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => onSelected(key),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.12) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? color : const Color(0xFFCBD5E1),
+            width: isSelected ? 1.6 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isSelected ? color : const Color(0xFF64748B)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? color : const Color(0xFF334155),
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.check_circle_rounded, size: 14, color: color),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -995,6 +1080,11 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
           };
 
     bool vatAble = item?['vatAble'] is bool ? item!['vatAble'] : false;
+    bool stickerEnable = (item?['sticker_enable'] ?? item?['stickerEnable'] ?? false) == true;
+    String readyFor = (item?['ready_for'] ?? item?['readyFor'] ?? 'kitchen').toString().toLowerCase().trim();
+    if (!['kitchen', 'bar', 'readymade', 'hot_kitchen'].contains(readyFor)) {
+      readyFor = 'kitchen';
+    }
 
     showDialog(
       context: context,
@@ -1088,6 +1178,82 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                     onChanged: (val) => setDialogState(() => vatAble = val),
                   ),
                   const SizedBox(height: 12),
+
+                  // Station Pre-Printer & Sticker Setup
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.print_rounded, size: 18, color: Color(0xFF4F46E5)),
+                            SizedBox(width: 8),
+                            Text(
+                              'Printer Station & Sticker Setup',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        SwitchListTile(
+                          title: const Text('Sticker / Label Printing', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          subtitle: const Text('Enable adhesive sticker printing for cup/box labels', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          secondary: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: stickerEnable ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.loyalty_rounded,
+                              size: 18,
+                              color: stickerEnable ? const Color(0xFF059669) : const Color(0xFF94A3B8),
+                            ),
+                          ),
+                          value: stickerEnable,
+                          contentPadding: EdgeInsets.zero,
+                          activeColor: const Color(0xFF059669),
+                          onChanged: (val) => setDialogState(() => stickerEnable = val),
+                        ),
+                        const Divider(height: 20),
+                        const Text(
+                          'Pre-Printer Routing Station (ready_for)',
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF334155)),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Select which prep station printer receives orders for this item',
+                          style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildStationChip('kitchen', 'Kitchen', Icons.restaurant_rounded, const Color(0xFFEA580C), readyFor, (val) {
+                              setDialogState(() => readyFor = val);
+                            }),
+                            _buildStationChip('bar', 'Bar', Icons.local_bar_rounded, const Color(0xFF7C3AED), readyFor, (val) {
+                              setDialogState(() => readyFor = val);
+                            }),
+                            _buildStationChip('readymade', 'Readymade', Icons.takeout_dining_rounded, const Color(0xFF0D9488), readyFor, (val) {
+                              setDialogState(() => readyFor = val);
+                            }),
+                            _buildStationChip('hot_kitchen', 'Hot Kitchen', Icons.local_fire_department_rounded, const Color(0xFFDC2626), readyFor, (val) {
+                              setDialogState(() => readyFor = val);
+                            }),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
 
                   // Tagging Section: Categories
                   const Text('Categories Tagging', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -1309,6 +1475,10 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                   'endTime': item?['endTime'] ?? DateTime.now().add(const Duration(hours: 14)).toIso8601String(),
                   'makedByKitchen': item?['makedByKitchen'] is List ? item!['makedByKitchen'] : [],
                   'makedByBar': item?['makedByBar'] is List ? item!['makedByBar'] : [],
+                  'sticker_enable': stickerEnable,
+                  'stickerEnable': stickerEnable,
+                  'ready_for': readyFor,
+                  'readyFor': readyFor,
                   'options': item?['options'] is List ? item!['options'] : [],
                   'extras': item?['extras'] is List ? item!['extras'] : [],
                   'relatedItems': item?['relatedItems'] is List ? item!['relatedItems'] : [],
@@ -1425,7 +1595,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
       final buffer = StringBuffer();
       // CSV Header
-      buffer.writeln('name,shortName,description,category,cuisine,tags,portions,options,extras,vatAble,status');
+      buffer.writeln('name,shortName,description,category,cuisine,tags,portions,options,extras,sticker_enable,ready_for,vatAble,status');
 
       for (var item in items) {
         final name = item['name'] ?? '';
@@ -1437,6 +1607,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         final portions = _formatPortionsForCsv(item['portions']);
         final options = _formatOptionsForCsv(item['options']);
         final extras = _formatExtrasForCsv(item['extras']);
+        final stickerEnable = (item['sticker_enable'] ?? item['stickerEnable'] ?? false) == true ? 'true' : 'false';
+        final readyFor = (item['ready_for'] ?? item['readyFor'] ?? 'kitchen').toString();
         final vatAble = item['vatAble'] == true ? 'true' : 'false';
         final status = item['status'] == false ? 'false' : 'true';
 
@@ -1450,6 +1622,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
           _escapeCsvCell(portions),
           _escapeCsvCell(options),
           _escapeCsvCell(extras),
+          _escapeCsvCell(stickerEnable),
+          _escapeCsvCell(readyFor),
           _escapeCsvCell(vatAble),
           _escapeCsvCell(status),
         ].join(','));
@@ -1457,7 +1631,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
       final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
       final fileName = 'food_items_export_${DateTime.now().millisecondsSinceEpoch}.csv';
-      _downloadViaAnchor(bytes, fileName, 'text/csv', successMsg: 'Exported ${items.length} items with categories, cuisines, tags, portions & options!');
+      _downloadViaAnchor(bytes, fileName, 'text/csv', successMsg: 'Exported ${items.length} items with sticker setup & printer routing stations!');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1485,9 +1659,9 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
       final buffer = StringBuffer();
       // CSV Header
-      buffer.writeln('name,shortName,description,category,cuisine,tags,portions,options,extras,vatAble,status');
+      buffer.writeln('name,shortName,description,category,cuisine,tags,portions,options,extras,sticker_enable,ready_for,vatAble,status');
 
-      // Sample Row 1: Item with multiple portions and options
+      // Sample Row 1: Kitchen item with sticker printing enabled
       buffer.writeln([
         _escapeCsvCell('Chicken Biryani'),
         _escapeCsvCell('CB01'),
@@ -1498,11 +1672,13 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         _escapeCsvCell('Regular: 11.95 | Large: 14.50'),
         _escapeCsvCell('Spice Level: Mild, Medium, Hot | Rice Choice: Basmati, Pilau (+1.00)'),
         _escapeCsvCell('Extra Raita: 1.50 | Boiled Egg: 1.00'),
+        'true',
+        'kitchen',
         'false',
         'true',
       ].join(','));
 
-      // Sample Row 2: Item with single portion, multiple tags and extras
+      // Sample Row 2: Hot Kitchen item with sticker printing disabled
       buffer.writeln([
         _escapeCsvCell('Garlic Naan Bread'),
         _escapeCsvCell('GNB01'),
@@ -1514,10 +1690,12 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         _escapeCsvCell('Preparation: Crispy, Soft'),
         _escapeCsvCell('Extra Garlic Butter: 0.80 | Cheese Stuffed: 1.50'),
         'false',
+        'hot_kitchen',
+        'false',
         'true',
       ].join(','));
 
-      // Sample Row 3: Drinks / sides with VAT
+      // Sample Row 3: Bar drink with sticker printing enabled
       buffer.writeln([
         _escapeCsvCell('Mango Lassi Drink'),
         _escapeCsvCell('ML01'),
@@ -1529,11 +1707,13 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         _escapeCsvCell('Sweetness: Normal Sweet, Less Sweet'),
         _escapeCsvCell('Extra Mint: 0.50'),
         'true',
+        'bar',
+        'true',
         'true',
       ].join(','));
 
       final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
-      _downloadViaAnchor(bytes, 'food_items_template.csv', 'text/csv', successMsg: 'Template downloaded with categories, cuisines, tags, portions & options!');
+      _downloadViaAnchor(bytes, 'food_items_template.csv', 'text/csv', successMsg: 'Template downloaded with sticker_enable & ready_for printer routing stations!');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1725,6 +1905,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
       int? priceCol = columnMap['price'] ?? columnMap['portionprice'] ?? columnMap['portion_price'];
       int? optionsCol = columnMap['options'] ?? columnMap['option'];
       int? extrasCol = columnMap['extras'] ?? columnMap['extra'];
+      int? stickerCol = columnMap['sticker_enable'] ?? columnMap['stickerenable'] ?? columnMap['sticker'] ?? columnMap['is_label_enabled'] ?? columnMap['label_enable'];
+      int? readyForCol = columnMap['ready_for'] ?? columnMap['readyfor'] ?? columnMap['station'] ?? columnMap['pre_printer'] ?? columnMap['printer'];
       int? vatCol = columnMap['vatable'] ?? columnMap['vat_able'] ?? columnMap['vat'];
       int? statusCol = columnMap['status'] ?? columnMap['isactive'] ?? columnMap['active'];
 
@@ -1776,6 +1958,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
         final priceRaw = getCellStr(priceCol);
         final optionsRaw = getCellStr(optionsCol);
         final extrasRaw = getCellStr(extrasCol);
+        final stickerRaw = getCellStr(stickerCol).toLowerCase();
+        final readyForRaw = getCellStr(readyForCol).toLowerCase().replaceAll(' ', '_');
         final vatRaw = getCellStr(vatCol).toLowerCase();
         final statusRaw = getCellStr(statusCol).toLowerCase();
 
@@ -2002,9 +2186,11 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
           }
         }
 
-        // 7. Parse VAT and Status
+        // 7. Parse VAT, Status, Sticker & Station
         final bool vatAble = vatRaw == 'true' || vatRaw == 'yes' || vatRaw == '1';
         final bool status = statusRaw.isEmpty || statusRaw == 'true' || statusRaw == 'yes' || statusRaw == 'active' || statusRaw == '1';
+        final bool stickerEnable = stickerRaw == 'true' || stickerRaw == 'yes' || stickerRaw == '1';
+        final String readyFor = ['bar', 'hot_kitchen', 'readymade'].contains(readyForRaw) ? readyForRaw : 'kitchen';
 
         final newItem = {
           '_id': 'import_${DateTime.now().millisecondsSinceEpoch}_$rowIdx',
@@ -2018,6 +2204,10 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
           'portions': portions,
           'options': options,
           'extras': extras,
+          'sticker_enable': stickerEnable,
+          'stickerEnable': stickerEnable,
+          'ready_for': readyFor,
+          'readyFor': readyFor,
           'status': status,
           'vatAble': vatAble,
           'foodTypeList': ['DineIn', 'Collection', 'Delivery', 'Waiting'],
