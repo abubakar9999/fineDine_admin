@@ -532,6 +532,17 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               label: const Text('Template'),
             ),
             const SizedBox(width: 8),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.blue.shade700,
+                side: BorderSide(color: Colors.blue.shade300),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              ),
+              onPressed: _exportFoodItemsToCsv,
+              icon: const Icon(Icons.file_download_outlined, size: 18),
+              label: const Text('Export CSV'),
+            ),
+            const SizedBox(width: 8),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green.shade700,
@@ -540,7 +551,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
               ),
               onPressed: _importFoodItemsFromExcel,
               icon: const Icon(Icons.upload_file),
-              label: const Text('Import Excel'),
+              label: const Text('Import Excel/CSV'),
             ),
             const SizedBox(width: 8),
             ElevatedButton.icon(
@@ -1126,46 +1137,220 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
   }
 
   // ==========================================
-  // --- EXCEL IMPORT FOR FOOD ITEMS ---
+  // --- EXCEL & CSV IMPORT / EXPORT FOR FOOD ITEMS ---
   // ==========================================
 
-  void _downloadExcelTemplate() {
+  String _escapeCsvCell(dynamic value) {
+    if (value == null) return '';
+    final str = value.toString().trim();
+    if (str.contains(',') || str.contains('"') || str.contains('\n') || str.contains('\r') || str.contains(';')) {
+      return '"${str.replaceAll('"', '""')}"';
+    }
+    return str;
+  }
+
+  String _formatPortionsForCsv(dynamic portionsRaw) {
+    if (portionsRaw is! List || portionsRaw.isEmpty) return 'Standard: 0.00';
+    List<String> list = [];
+    for (var p in portionsRaw) {
+      if (p is Map) {
+        final name = (p['portionName'] ?? 'Standard').toString().trim();
+        final price = (p['portionPriceDineIn'] ?? p['portionPrice'] ?? 0.0);
+        list.add('$name: $price');
+      }
+    }
+    return list.isNotEmpty ? list.join(' | ') : 'Standard: 0.00';
+  }
+
+  String _formatOptionsForCsv(dynamic optionsRaw) {
+    if (optionsRaw is! List || optionsRaw.isEmpty) return '';
+    List<String> list = [];
+    for (var opt in optionsRaw) {
+      if (opt is Map) {
+        final optName = (opt['optionName'] ?? opt['name'] ?? '').toString().trim();
+        if (optName.isEmpty) continue;
+        List<String> varList = [];
+        if (opt['optionVariant'] is List) {
+          for (var v in opt['optionVariant']) {
+            if (v is Map) {
+              final vName = (v['variantName'] ?? v['name'] ?? '').toString().trim();
+              final num vPrice = (v['variantPrice'] ?? v['price'] ?? 0.0);
+              if (vName.isNotEmpty) {
+                if (vPrice > 0) {
+                  varList.add('$vName (+$vPrice)');
+                } else {
+                  varList.add(vName);
+                }
+              }
+            }
+          }
+        }
+        if (varList.isNotEmpty) {
+          list.add('$optName: ${varList.join(', ')}');
+        } else {
+          list.add(optName);
+        }
+      }
+    }
+    return list.join(' | ');
+  }
+
+  String _formatExtrasForCsv(dynamic extrasRaw) {
+    if (extrasRaw is! List || extrasRaw.isEmpty) return '';
+    List<String> list = [];
+    for (var ext in extrasRaw) {
+      if (ext is Map) {
+        final eName = (ext['extraName'] ?? ext['name'] ?? '').toString().trim();
+        final num ePrice = (ext['extraPrice'] ?? ext['price'] ?? 0.0);
+        if (eName.isNotEmpty) {
+          list.add('$eName: $ePrice');
+        }
+      }
+    }
+    return list.join(' | ');
+  }
+
+  void _exportFoodItemsToCsv() {
     try {
-      // Create CSV content which is 100% compatible with Excel, Google Sheets, and Web browsers
-      const csvHeader = 'name,shortName,description,portionName,price,category,cuisine,tag\n';
-      const sampleRows = 
-        'Chicken Biryani,CB01,Fragrant rice dish,Regular,12.99,Main Course,Indian,halal\n'
-        'Mango Lassi,ML01,Sweet yogurt drink,Standard,4.50,Drinks,Indian,\n'
-        'Garlic Naan,GN01,Fresh baked bread,Regular,3.00,Bread,Indian,vegetarian\n';
+      final items = _getItems();
+      if (items.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No food items available to export.'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
 
-      final String csvContent = csvHeader + sampleRows;
-      final bytes = Uint8List.fromList(utf8.encode(csvContent));
+      final buffer = StringBuffer();
+      // CSV Header
+      buffer.writeln('name,shortName,description,category,cuisine,tags,portions,options,extras,vatAble,status');
 
-      _downloadViaAnchor(bytes, 'food_items_template.csv', 'text/csv');
+      for (var item in items) {
+        final name = item['name'] ?? '';
+        final shortName = item['shortName'] ?? '';
+        final desc = item['description'] ?? '';
+        final cats = _getItemCategoryNames(item).join('; ');
+        final cuis = _getItemCuisineNames(item).join('; ');
+        final tags = _getItemTagNames(item).join('; ');
+        final portions = _formatPortionsForCsv(item['portions']);
+        final options = _formatOptionsForCsv(item['options']);
+        final extras = _formatExtrasForCsv(item['extras']);
+        final vatAble = item['vatAble'] == true ? 'true' : 'false';
+        final status = item['status'] == false ? 'false' : 'true';
+
+        buffer.writeln([
+          _escapeCsvCell(name),
+          _escapeCsvCell(shortName),
+          _escapeCsvCell(desc),
+          _escapeCsvCell(cats),
+          _escapeCsvCell(cuis),
+          _escapeCsvCell(tags),
+          _escapeCsvCell(portions),
+          _escapeCsvCell(options),
+          _escapeCsvCell(extras),
+          _escapeCsvCell(vatAble),
+          _escapeCsvCell(status),
+        ].join(','));
+      }
+
+      final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+      final fileName = 'food_items_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      _downloadViaAnchor(bytes, fileName, 'text/csv', successMsg: 'Exported ${items.length} items with categories, cuisines, tags, portions & options!');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to create template: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+          SnackBar(content: Text('Failed to export CSV: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
-  void _downloadViaAnchor(Uint8List bytes, String fileName, String mimeType) async {
+  void _downloadExcelTemplate() {
+    try {
+      final categories = _getCategories().map((c) => (c['name'] ?? '').toString().trim()).where((s) => s.isNotEmpty).toList();
+      final cuisines = _getCuisines().map((c) => (c['name'] ?? '').toString().trim()).where((s) => s.isNotEmpty).toList();
+      final tags = _getTags().map((t) => (t['name'] ?? '').toString().trim()).where((s) => s.isNotEmpty).toList();
+
+      final cat1 = categories.isNotEmpty ? categories[0] : 'Main Course';
+      final cat2 = categories.length > 1 ? categories[1] : (categories.isNotEmpty ? categories[0] : 'Starters');
+      final cat3 = categories.length > 2 ? categories[2] : (categories.isNotEmpty ? categories[0] : 'Drinks');
+
+      final cuis1 = cuisines.isNotEmpty ? cuisines[0] : 'Indian';
+      final cuis2 = cuisines.length > 1 ? cuisines[1] : cuis1;
+
+      final tag1 = tags.isNotEmpty ? tags[0] : 'Halal';
+      final tag2 = tags.length > 1 ? '${tags[0]}; ${tags[1]}' : 'Spicy; Chef Special';
+
+      final buffer = StringBuffer();
+      // CSV Header
+      buffer.writeln('name,shortName,description,category,cuisine,tags,portions,options,extras,vatAble,status');
+
+      // Sample Row 1: Item with multiple portions and options
+      buffer.writeln([
+        _escapeCsvCell('Chicken Biryani'),
+        _escapeCsvCell('CB01'),
+        _escapeCsvCell('Aromatic basmati rice cooked with spiced chicken and herbs'),
+        _escapeCsvCell(cat1),
+        _escapeCsvCell(cuis1),
+        _escapeCsvCell(tag1),
+        _escapeCsvCell('Regular: 11.95 | Large: 14.50'),
+        _escapeCsvCell('Spice Level: Mild, Medium, Hot | Rice Choice: Basmati, Pilau (+1.00)'),
+        _escapeCsvCell('Extra Raita: 1.50 | Boiled Egg: 1.00'),
+        'false',
+        'true',
+      ].join(','));
+
+      // Sample Row 2: Item with single portion, multiple tags and extras
+      buffer.writeln([
+        _escapeCsvCell('Garlic Naan Bread'),
+        _escapeCsvCell('GNB01'),
+        _escapeCsvCell('Clay oven baked flatbread brushed with garlic butter and fresh coriander'),
+        _escapeCsvCell(cat2),
+        _escapeCsvCell(cuis2),
+        _escapeCsvCell(tag2),
+        _escapeCsvCell('Standard: 3.50'),
+        _escapeCsvCell('Preparation: Crispy, Soft'),
+        _escapeCsvCell('Extra Garlic Butter: 0.80 | Cheese Stuffed: 1.50'),
+        'false',
+        'true',
+      ].join(','));
+
+      // Sample Row 3: Drinks / sides with VAT
+      buffer.writeln([
+        _escapeCsvCell('Mango Lassi Drink'),
+        _escapeCsvCell('ML01'),
+        _escapeCsvCell('Chilled yogurt smoothie blended with sweet mango pulp'),
+        _escapeCsvCell(cat3),
+        _escapeCsvCell(cuis1),
+        _escapeCsvCell('Popular'),
+        _escapeCsvCell('Regular: 4.25 | Large: 5.50'),
+        _escapeCsvCell('Sweetness: Normal Sweet, Less Sweet'),
+        _escapeCsvCell('Extra Mint: 0.50'),
+        'true',
+        'true',
+      ].join(','));
+
+      final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+      _downloadViaAnchor(bytes, 'food_items_template.csv', 'text/csv', successMsg: 'Template downloaded with categories, cuisines, tags, portions & options!');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create template: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _downloadViaAnchor(Uint8List bytes, String fileName, String mimeType, {String successMsg = 'Downloaded successfully!'}) async {
     try {
       final success = await FileSaver.saveFile(
-        dialogTitle: 'Save Import Template',
+        dialogTitle: 'Save File',
         fileName: fileName,
         bytes: bytes,
         mimeType: mimeType,
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Template downloaded successfully!'), backgroundColor: Color(0xFF10B981)),
+          SnackBar(content: Text(successMsg), backgroundColor: const Color(0xFF10B981)),
         );
       }
     } catch (e) {
@@ -1330,11 +1515,15 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
       int? nameCol = columnMap['name'];
       int? shortNameCol = columnMap['shortname'] ?? columnMap['short_name'] ?? columnMap['code'];
       int? descCol = columnMap['description'] ?? columnMap['desc'];
-      int? portionNameCol = columnMap['portionname'] ?? columnMap['portion_name'] ?? columnMap['portion'];
-      int? priceCol = columnMap['price'] ?? columnMap['portionprice'] ?? columnMap['portion_price'];
       int? categoryCol = columnMap['category'] ?? columnMap['categories'];
       int? cuisineCol = columnMap['cuisine'] ?? columnMap['cuisines'];
-      int? tagCol = columnMap['tag'] ?? columnMap['tags'];
+      int? tagCol = columnMap['tags'] ?? columnMap['tag'];
+      int? portionsCol = columnMap['portions'] ?? columnMap['portion'] ?? columnMap['portionname'] ?? columnMap['portion_name'];
+      int? priceCol = columnMap['price'] ?? columnMap['portionprice'] ?? columnMap['portion_price'];
+      int? optionsCol = columnMap['options'] ?? columnMap['option'];
+      int? extrasCol = columnMap['extras'] ?? columnMap['extra'];
+      int? vatCol = columnMap['vatable'] ?? columnMap['vat_able'] ?? columnMap['vat'];
+      int? statusCol = columnMap['status'] ?? columnMap['isactive'] ?? columnMap['active'];
 
       if (nameCol == null) {
         if (mounted) {
@@ -1353,6 +1542,10 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
       final categories = _getCategories();
       final cuisines = _getCuisines();
       final tags = _getTags();
+
+      final List<Map<String, dynamic>> newCategoriesToSave = [];
+      final List<Map<String, dynamic>> newCuisinesToSave = [];
+      final List<Map<String, dynamic>> newTagsToSave = [];
 
       final List<Map<String, dynamic>> parsedItems = [];
       final List<String> warnings = [];
@@ -1373,45 +1566,242 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
         final shortName = getCellStr(shortNameCol);
         final description = getCellStr(descCol);
-        final portionName = getCellStr(portionNameCol).isNotEmpty ? getCellStr(portionNameCol) : 'Standard';
-        final priceStr = getCellStr(priceCol);
-        final price = double.tryParse(priceStr) ?? 0.0;
-        final categoryName = getCellStr(categoryCol);
-        final cuisineName = getCellStr(cuisineCol);
-        final tagName = getCellStr(tagCol);
+        final categoryRaw = getCellStr(categoryCol);
+        final cuisineRaw = getCellStr(cuisineCol);
+        final tagRaw = getCellStr(tagCol);
+        final portionsRaw = getCellStr(portionsCol);
+        final priceRaw = getCellStr(priceCol);
+        final optionsRaw = getCellStr(optionsCol);
+        final extrasRaw = getCellStr(extrasCol);
+        final vatRaw = getCellStr(vatCol).toLowerCase();
+        final statusRaw = getCellStr(statusCol).toLowerCase();
 
-        // Match category
+        // 1. Match or auto-create categories
         List<Map<String, dynamic>> matchedCategories = [];
-        if (categoryName.isNotEmpty) {
-          final match = categories.where((c) => (c['name'] ?? '').toString().toLowerCase() == categoryName.toLowerCase()).toList();
-          if (match.isNotEmpty) {
-            matchedCategories = match;
-          } else {
-            warnings.add('Row ${rowIdx + 1}: Category "$categoryName" not found (skipped tagging)');
+        if (categoryRaw.isNotEmpty) {
+          final catTokens = categoryRaw.split(RegExp(r'[;,|]')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+          for (var token in catTokens) {
+            final existing = categories.firstWhere(
+              (c) => (c['name'] ?? '').toString().toLowerCase() == token.toLowerCase(),
+              orElse: () => {},
+            );
+            if (existing.isNotEmpty) {
+              if (!matchedCategories.any((c) => c['_id'] == existing['_id'])) {
+                matchedCategories.add(existing);
+              }
+            } else {
+              // Auto-create category so item is never unassigned
+              final newCat = {
+                '_id': 'cat_${DateTime.now().millisecondsSinceEpoch}_${categories.length}',
+                'name': token,
+                'restId': widget.restId,
+                'sl': categories.length,
+                'createdBy': 'Admin (Import)',
+                'updatedBy': 'Admin (Import)',
+                'createdAt': DateTime.now().toIso8601String(),
+                'updatedAt': DateTime.now().toIso8601String(),
+                '__v': 0,
+              };
+              categories.add(newCat);
+              newCategoriesToSave.add(newCat);
+              matchedCategories.add(newCat);
+            }
           }
         }
 
-        // Match cuisine
+        // 2. Match or auto-create cuisines
         List<Map<String, dynamic>> matchedCuisines = [];
-        if (cuisineName.isNotEmpty) {
-          final match = cuisines.where((c) => (c['name'] ?? '').toString().toLowerCase() == cuisineName.toLowerCase()).toList();
-          if (match.isNotEmpty) {
-            matchedCuisines = match;
-          } else {
-            warnings.add('Row ${rowIdx + 1}: Cuisine "$cuisineName" not found (skipped tagging)');
+        if (cuisineRaw.isNotEmpty) {
+          final cuisTokens = cuisineRaw.split(RegExp(r'[;,|]')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+          for (var token in cuisTokens) {
+            final existing = cuisines.firstWhere(
+              (c) => (c['name'] ?? '').toString().toLowerCase() == token.toLowerCase(),
+              orElse: () => {},
+            );
+            if (existing.isNotEmpty) {
+              if (!matchedCuisines.any((c) => c['_id'] == existing['_id'])) {
+                matchedCuisines.add(existing);
+              }
+            } else {
+              final newCuis = {
+                '_id': 'cuis_${DateTime.now().millisecondsSinceEpoch}_${cuisines.length}',
+                'name': token,
+                'restId': widget.restId,
+                'sl': cuisines.length,
+                'createdBy': 'Admin (Import)',
+                'updatedBy': 'Admin (Import)',
+                'createdAt': DateTime.now().toIso8601String(),
+                'updatedAt': DateTime.now().toIso8601String(),
+                '__v': 0,
+              };
+              cuisines.add(newCuis);
+              newCuisinesToSave.add(newCuis);
+              matchedCuisines.add(newCuis);
+            }
           }
         }
 
-        // Match tag
+        // 3. Match or auto-create tags
         List<Map<String, dynamic>> matchedTags = [];
-        if (tagName.isNotEmpty) {
-          final match = tags.where((t) => (t['name'] ?? '').toString().toLowerCase() == tagName.toLowerCase()).toList();
-          if (match.isNotEmpty) {
-            matchedTags = match;
-          } else {
-            warnings.add('Row ${rowIdx + 1}: Tag "$tagName" not found (skipped tagging)');
+        if (tagRaw.isNotEmpty) {
+          final tagTokens = tagRaw.split(RegExp(r'[;,|]')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+          for (var token in tagTokens) {
+            final existing = tags.firstWhere(
+              (t) => (t['name'] ?? '').toString().toLowerCase() == token.toLowerCase(),
+              orElse: () => {},
+            );
+            if (existing.isNotEmpty) {
+              if (!matchedTags.any((t) => t['_id'] == existing['_id'])) {
+                matchedTags.add(existing);
+              }
+            } else {
+              final newTag = {
+                '_id': 'tag_${DateTime.now().millisecondsSinceEpoch}_${tags.length}',
+                'name': token,
+                'restId': widget.restId,
+                'createdBy': 'Admin (Import)',
+                'updatedBy': 'Admin (Import)',
+                'createdAt': DateTime.now().toIso8601String(),
+                'updatedAt': DateTime.now().toIso8601String(),
+                '__v': 0,
+              };
+              tags.add(newTag);
+              newTagsToSave.add(newTag);
+              matchedTags.add(newTag);
+            }
           }
         }
+
+        // 4. Parse Portions (supports "Regular: 11.95 | Large: 14.50" or simple price)
+        List<Map<String, dynamic>> portions = [];
+        if (portionsRaw.isNotEmpty && portionsRaw.contains(':')) {
+          final pSegments = portionsRaw.split(RegExp(r'[|;]'));
+          int pIdx = 0;
+          for (var seg in pSegments) {
+            final parts = seg.split(':');
+            if (parts.isNotEmpty) {
+              final pName = parts[0].trim();
+              final pPriceStr = parts.length > 1 ? parts[1].replaceAll(RegExp(r'[^\d.]'), '').trim() : '0.0';
+              final pPrice = double.tryParse(pPriceStr) ?? 0.0;
+              if (pName.isNotEmpty) {
+                portions.add({
+                  '_id': 'p_${DateTime.now().millisecondsSinceEpoch}_${rowIdx}_$pIdx',
+                  'portionName': pName,
+                  'portionPriceDineIn': pPrice,
+                  'portionPriceCollection': pPrice,
+                  'portionPriceDelivery': pPrice,
+                  'portionPriceWaiting': pPrice,
+                  'portionPrice': pPrice,
+                });
+                pIdx++;
+              }
+            }
+          }
+        }
+
+        if (portions.isEmpty) {
+          final fallbackName = portionsRaw.isNotEmpty && !portionsRaw.contains(':') ? portionsRaw : 'Standard';
+          final fallbackPrice = double.tryParse(priceRaw) ?? double.tryParse(portionsRaw.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
+          portions.add({
+            '_id': 'p_${DateTime.now().millisecondsSinceEpoch}_$rowIdx',
+            'portionName': fallbackName,
+            'portionPriceDineIn': fallbackPrice,
+            'portionPriceCollection': fallbackPrice,
+            'portionPriceDelivery': fallbackPrice,
+            'portionPriceWaiting': fallbackPrice,
+            'portionPrice': fallbackPrice,
+          });
+        }
+
+        // 5. Parse Options & Variants (e.g. "Spice Level: Mild, Medium, Hot | Meat: Chicken, Lamb (+2.00)")
+        List<Map<String, dynamic>> options = [];
+        if (optionsRaw.isNotEmpty) {
+          final optBlocks = optionsRaw.split(RegExp(r'[|]'));
+          int optIdx = 0;
+          for (var block in optBlocks) {
+            final parts = block.split(':');
+            if (parts.isNotEmpty) {
+              final optName = parts[0].trim();
+              if (optName.isEmpty) continue;
+
+              List<Map<String, dynamic>> variants = [];
+              if (parts.length > 1) {
+                final vTokens = parts[1].split(RegExp(r'[,;]'));
+                int vIdx = 0;
+                for (var token in vTokens) {
+                  final t = token.trim();
+                  if (t.isEmpty) continue;
+
+                  String vName = t;
+                  double vPrice = 0.0;
+
+                  final priceMatch = RegExp(r'\(\+?([\d.]+)\)').firstMatch(t);
+                  if (priceMatch != null) {
+                    vPrice = double.tryParse(priceMatch.group(1) ?? '0.0') ?? 0.0;
+                    vName = t.replaceAll(RegExp(r'\(\+?[\d.]+\)'), '').trim();
+                  } else if (t.contains(':')) {
+                    final subParts = t.split(':');
+                    vName = subParts[0].trim();
+                    vPrice = double.tryParse(subParts[1].replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
+                  }
+
+                  variants.add({
+                    '_id': 'var_${DateTime.now().millisecondsSinceEpoch}_${rowIdx}_${optIdx}_$vIdx',
+                    'variantName': vName,
+                    'variantPrice': vPrice,
+                  });
+                  vIdx++;
+                }
+              }
+
+              options.add({
+                '_id': 'opt_${DateTime.now().millisecondsSinceEpoch}_${rowIdx}_$optIdx',
+                'optionName': optName,
+                'optionVariant': variants,
+              });
+              optIdx++;
+            }
+          }
+        }
+
+        // 6. Parse Extras (e.g. "Extra Cheese: 1.50 | Garlic Sauce: 0.80")
+        List<Map<String, dynamic>> extras = [];
+        if (extrasRaw.isNotEmpty) {
+          final extBlocks = extrasRaw.split(RegExp(r'[|;]'));
+          int extIdx = 0;
+          for (var block in extBlocks) {
+            final b = block.trim();
+            if (b.isEmpty) continue;
+
+            String eName = b;
+            double ePrice = 0.0;
+            if (b.contains(':')) {
+              final sub = b.split(':');
+              eName = sub[0].trim();
+              ePrice = double.tryParse(sub[1].replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
+            } else {
+              final pMatch = RegExp(r'\(\+?([\d.]+)\)').firstMatch(b);
+              if (pMatch != null) {
+                ePrice = double.tryParse(pMatch.group(1) ?? '0.0') ?? 0.0;
+                eName = b.replaceAll(RegExp(r'\(\+?[\d.]+\)'), '').trim();
+              }
+            }
+
+            if (eName.isNotEmpty) {
+              extras.add({
+                '_id': 'ext_${DateTime.now().millisecondsSinceEpoch}_${rowIdx}_$extIdx',
+                'extraName': eName,
+                'extraPrice': ePrice,
+                'extraQuantity': 1,
+              });
+              extIdx++;
+            }
+          }
+        }
+
+        // 7. Parse VAT and Status
+        final bool vatAble = vatRaw == 'true' || vatRaw == 'yes' || vatRaw == '1';
+        final bool status = statusRaw.isEmpty || statusRaw == 'true' || statusRaw == 'yes' || statusRaw == 'active' || statusRaw == '1';
 
         final newItem = {
           '_id': 'import_${DateTime.now().millisecondsSinceEpoch}_$rowIdx',
@@ -1422,26 +1812,16 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
           'categories': matchedCategories,
           'cuisines': matchedCuisines,
           'tags': matchedTags,
-          'portions': [
-            {
-              '_id': 'p_${DateTime.now().millisecondsSinceEpoch}_$rowIdx',
-              'portionName': portionName,
-              'portionPriceDineIn': price,
-              'portionPriceCollection': price,
-              'portionPriceDelivery': price,
-              'portionPriceWaiting': price,
-              'portionPrice': price,
-            }
-          ],
-          'status': true,
-          'vatAble': false,
+          'portions': portions,
+          'options': options,
+          'extras': extras,
+          'status': status,
+          'vatAble': vatAble,
           'foodTypeList': ['DineIn', 'Collection', 'Delivery', 'Waiting'],
           'days': {'sat': true, 'sun': true, 'mon': true, 'tue': true, 'wed': true, 'thu': true, 'fri': true},
           'makedByKitchen': [],
           'makedByBar': [],
           'relatedItems': [],
-          'options': [],
-          'extras': [],
           'cookingTime': 0,
           'startTime': DateTime.now().toIso8601String(),
           'endTime': DateTime.now().toIso8601String(),
@@ -1468,18 +1848,25 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
 
       // Show preview dialog
       if (mounted) {
-        _showImportPreviewDialog(parsedItems, warnings, file.name);
+        _showImportPreviewDialog(
+          parsedItems,
+          warnings,
+          file.name,
+          newCategories: newCategoriesToSave,
+          newCuisines: newCuisinesToSave,
+          newTags: newTagsToSave,
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         String errorMsg = e.toString();
         if (errorMsg.contains('LateInitialization')) {
-          errorMsg = 'File format error. Please use the "Template" button to download a valid .xlsx template, fill it in, and try again.';
+          errorMsg = 'File format error. Please use the "Template" button to download a valid template, fill it in, and try again.';
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error importing Excel file: $errorMsg'),
+            content: Text('Error importing file: $errorMsg'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -1488,7 +1875,14 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
     }
   }
 
-  void _showImportPreviewDialog(List<Map<String, dynamic>> parsedItems, List<String> warnings, String fileName) {
+  void _showImportPreviewDialog(
+    List<Map<String, dynamic>> parsedItems,
+    List<String> warnings,
+    String fileName, {
+    List<Map<String, dynamic>>? newCategories,
+    List<Map<String, dynamic>>? newCuisines,
+    List<Map<String, dynamic>>? newTags,
+  }) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1502,7 +1896,7 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 children: [
                   const Text('Import Preview', style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(
-                    '$fileName — ${parsedItems.length} item${parsedItems.length == 1 ? '' : 's'} found',
+                    '$fileName — ${parsedItems.length} item${parsedItems.length == 1 ? '' : 's'} ready to import',
                     style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.normal),
                   ),
                 ],
@@ -1511,8 +1905,8 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
           ],
         ),
         content: SizedBox(
-          width: 700,
-          height: 450,
+          width: 850,
+          height: 500,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1541,15 +1935,15 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                         ],
                       ),
                       const SizedBox(height: 4),
-                      ...warnings.take(5).map((w) => Padding(
+                      ...warnings.take(3).map((w) => Padding(
                             padding: const EdgeInsets.only(left: 24, top: 2),
                             child: Text(w, style: TextStyle(fontSize: 12, color: Colors.amber.shade900)),
                           )),
-                      if (warnings.length > 5)
+                      if (warnings.length > 3)
                         Padding(
                           padding: const EdgeInsets.only(left: 24, top: 4),
                           child: Text(
-                            '...and ${warnings.length - 5} more',
+                            '...and ${warnings.length - 3} more',
                             style: TextStyle(fontSize: 12, color: Colors.amber.shade700, fontStyle: FontStyle.italic),
                           ),
                         ),
@@ -1574,6 +1968,25 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                     '${parsedItems.where((i) => (i['cuisines'] as List?)?.isNotEmpty == true).length} w/ Cuisine',
                     Colors.orange,
                   ),
+                  _importChip(
+                    Icons.local_offer,
+                    '${parsedItems.where((i) => (i['tags'] as List?)?.isNotEmpty == true).length} w/ Tags',
+                    Colors.purple,
+                  ),
+                  _importChip(
+                    Icons.tune,
+                    '${parsedItems.where((i) => (i['options'] as List?)?.isNotEmpty == true).length} w/ Options',
+                    Colors.blue,
+                  ),
+                  _importChip(
+                    Icons.add_circle_outline,
+                    '${parsedItems.where((i) => (i['extras'] as List?)?.isNotEmpty == true).length} w/ Extras',
+                    Colors.amber,
+                  ),
+                  if (newCategories != null && newCategories.isNotEmpty)
+                    _importChip(Icons.add, '+${newCategories.length} New Categories Created', Colors.green),
+                  if (newCuisines != null && newCuisines.isNotEmpty)
+                    _importChip(Icons.add, '+${newCuisines.length} New Cuisines Created', Colors.green),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1585,33 +1998,53 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
                 child: SingleChildScrollView(
                   child: DataTable(
                     headingRowColor: WidgetStateProperty.all(Colors.indigo.shade50),
-                    columnSpacing: 16,
-                    dataRowMinHeight: 36,
-                    dataRowMaxHeight: 52,
+                    columnSpacing: 12,
+                    dataRowMinHeight: 40,
+                    dataRowMaxHeight: 56,
                     columns: const [
                       DataColumn(label: Text('#', style: TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Code', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Portion', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Price', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
                       DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Cuisine', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Portions & Prices', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Options & Extras', style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
                     rows: parsedItems.asMap().entries.map((entry) {
                       final idx = entry.key;
                       final item = entry.value;
-                      final portions = item['portions'] as List? ?? [];
-                      final portionName = portions.isNotEmpty ? (portions[0]['portionName'] ?? 'Standard') : 'Standard';
-                      final price = portions.isNotEmpty ? (portions[0]['portionPriceDineIn'] ?? 0) : 0;
-                      final cats = item['categories'] as List? ?? [];
-                      final catName = cats.isNotEmpty ? (cats[0]['name'] ?? '') : '';
+
+                      final cats = (item['categories'] as List? ?? []).map((c) => (c['name'] ?? '').toString()).where((s) => s.isNotEmpty).join(', ');
+                      final cuis = (item['cuisines'] as List? ?? []).map((c) => (c['name'] ?? '').toString()).where((s) => s.isNotEmpty).join(', ');
+                      final portions = (item['portions'] as List? ?? []).map((p) => '${p['portionName']}: ৳${p['portionPriceDineIn'] ?? 0}').join(' | ');
+
+                      final optionsCount = (item['options'] as List? ?? []).length;
+                      final extrasCount = (item['extras'] as List? ?? []).length;
+                      String optExtText = 'None';
+                      if (optionsCount > 0 && extrasCount > 0) {
+                        optExtText = '$optionsCount opts, $extrasCount extras';
+                      } else if (optionsCount > 0) {
+                        optExtText = '$optionsCount option(s)';
+                      } else if (extrasCount > 0) {
+                        optExtText = '$extrasCount extra(s)';
+                      }
 
                       return DataRow(cells: [
                         DataCell(Text('${idx + 1}')),
-                        DataCell(Text(item['name'] ?? '', overflow: TextOverflow.ellipsis)),
-                        DataCell(Text(item['shortName'] ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 12))),
-                        DataCell(Text(portionName.toString())),
-                        DataCell(Text('৳${(price is num ? price : 0).toStringAsFixed(2)}')),
-                        DataCell(Text(catName.toString(), style: TextStyle(color: Colors.indigo.shade600, fontSize: 12))),
+                        DataCell(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(item['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              if ((item['shortName'] ?? '').toString().isNotEmpty)
+                                Text('Code: ${item['shortName']}', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        DataCell(Text(cats.isNotEmpty ? cats : 'Unassigned', style: TextStyle(color: cats.isNotEmpty ? Colors.teal.shade700 : Colors.grey, fontSize: 12))),
+                        DataCell(Text(cuis.isNotEmpty ? cuis : 'N/A', style: TextStyle(color: Colors.orange.shade800, fontSize: 12))),
+                        DataCell(Text(portions, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12))),
+                        DataCell(Text(optExtText, style: TextStyle(color: optionsCount > 0 || extrasCount > 0 ? Colors.indigo.shade700 : Colors.grey, fontSize: 12))),
                       ]);
                     }).toList(),
                   ),
@@ -1630,6 +2063,15 @@ class _SettingsViewState extends State<SettingsView> with SingleTickerProviderSt
             onPressed: () {
               final items = _getItems();
               setState(() {
+                if (newCategories != null && newCategories.isNotEmpty) {
+                  _saveCategories(_getCategories());
+                }
+                if (newCuisines != null && newCuisines.isNotEmpty) {
+                  _saveCuisines(_getCuisines());
+                }
+                if (newTags != null && newTags.isNotEmpty) {
+                  _saveTags(_getTags());
+                }
                 items.addAll(parsedItems);
                 _saveItems(items);
               });
