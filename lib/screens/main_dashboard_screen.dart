@@ -494,82 +494,113 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
         children: [
           // Sidebar Top Brand Emblem
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 22),
-                ),
-                if (!_isSidebarCollapsed) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'FineDine',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF0F172A),
-                            letterSpacing: -0.5,
+            padding: EdgeInsets.symmetric(
+              horizontal: _isSidebarCollapsed ? 12 : 16,
+              vertical: 20,
+            ),
+            child: _isSidebarCollapsed
+                ? Center(
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2FF),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'CLOUD PRO',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF4F46E5),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                      ],
+                        child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 20),
+                      ),
+                      tooltip: 'Expand Sidebar',
+                      onPressed: () {
+                        setState(() {
+                          _isSidebarCollapsed = false;
+                        });
+                      },
                     ),
+                  )
+                : Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'FineDine',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF0F172A),
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'CLOUD PRO',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF4F46E5),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.menu_open_rounded,
+                          color: Color(0xFF94A3B8),
+                          size: 20,
+                        ),
+                        tooltip: 'Collapse Sidebar',
+                        onPressed: () {
+                          setState(() {
+                            _isSidebarCollapsed = true;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                ],
-                IconButton(
-                  icon: Icon(
-                    _isSidebarCollapsed ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
-                    color: const Color(0xFF94A3B8),
-                    size: 20,
-                  ),
-                  tooltip: _isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar',
-                  onPressed: () {
-                    setState(() {
-                      _isSidebarCollapsed = !_isSidebarCollapsed;
-                    });
-                  },
-                ),
-              ],
-            ),
           ),
 
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -749,58 +780,89 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
 
           // User Profile Strip at Bottom
           Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+            padding: EdgeInsets.symmetric(
+              horizontal: _isSidebarCollapsed ? 12 : 16,
+              vertical: 16,
+            ),
+            child: _isSidebarCollapsed
+                ? Center(
+                    child: InkWell(
+                      onTap: _showLogoutDialog,
+                      borderRadius: BorderRadius.circular(19),
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4F46E5).withValues(alpha: 0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'A',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                          ),
+                        ),
+                      ),
                     ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF4F46E5).withValues(alpha: 0.2),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                  )
+                : Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4F46E5).withValues(alpha: 0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'A',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Store Admin',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'ID #$_currentRestId',
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.logout_rounded, color: Color(0xFF94A3B8), size: 18),
+                        tooltip: 'Sign Out',
+                        onPressed: _showLogoutDialog,
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Text(
-                      'A',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
-                    ),
-                  ),
-                ),
-                if (!_isSidebarCollapsed) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Store Admin',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'ID #$_currentRestId',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.logout_rounded, color: Color(0xFF94A3B8), size: 18),
-                    tooltip: 'Sign Out',
-                    onPressed: _showLogoutDialog,
-                  ),
-                ],
-              ],
-            ),
           ),
         ],
       ),
@@ -883,7 +945,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   Widget _buildDesktopHeaderBar() {
     return Container(
       height: 68,
-      padding: const EdgeInsets.symmetric(horizontal: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
@@ -891,28 +953,35 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Breadcrumbs
-          Row(
-            children: [
-              const Icon(Icons.storefront_rounded, size: 18, color: Color(0xFF94A3B8)),
-              const SizedBox(width: 8),
-              const Text(
-                'FineDine Cloud',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+          // Breadcrumbs (Scrollable if narrow)
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  const Icon(Icons.storefront_rounded, size: 18, color: Color(0xFF94A3B8)),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'FineDine Cloud',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text('/', style: TextStyle(fontSize: 14, color: Color(0xFFCBD5E1))),
+                  ),
+                  Text(
+                    _currentTabTitle,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                  ),
+                ],
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text('/', style: TextStyle(fontSize: 14, color: Color(0xFFCBD5E1))),
-              ),
-              Text(
-                _currentTabTitle,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-              ),
-            ],
+            ),
           ),
+          const SizedBox(width: 16),
 
           // Header Right Controls
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Live Sync Status Chip
               Container(
