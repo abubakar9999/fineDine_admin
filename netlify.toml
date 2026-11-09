@@ -1,0 +1,30 @@
+# Netlify configuration for Flutter Web
+
+[build]
+  publish = "build/web"
+  command = "git clone https://github.com/flutter/flutter.git --depth 1 -b stable _flutter && export PATH=\"$PATH:`pwd`/_flutter/bin\" && flutter doctor && flutter build web --release"
+
+# Single Page Application (SPA) routing: redirect all paths to /index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security and caching headers for Flutter Web assets
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/canvaskit/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
